@@ -1,9 +1,8 @@
-#include <pybind11/functional.h>  // если потребуются колбэки
+#include <pybind11/functional.h> // если потребуются колбэки
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>  // для std::vector ↔ list
+#include <pybind11/stl.h> // для std::vector ↔ list
 
 #include <fstream>
-#include <memory>
 
 #include "ATmega328p.h"
 #include "EmulatorFacade.h"
@@ -15,9 +14,9 @@ namespace py = pybind11;
  * Владеет всем эмулятором и предоставляет интуитивные методы.
  */
 class EmulatorWrapper {
- public:
+public:
   EmulatorWrapper() {
-    facade_ = ATmega328P::create();  // создаём готовый эмулятор
+    facade_ = ATmega328P::create(); // создаём готовый эмулятор
   }
 
   void step() { facade_->step_instruction(); }
@@ -29,8 +28,9 @@ class EmulatorWrapper {
   uint8_t get_sreg() { return facade_->get_sreg(); }
 
   std::vector<uint8_t> get_registers() {
-    const uint8_t* regs = facade_->get_registers();
-    if (!regs) return {};
+    const uint8_t *regs = facade_->get_registers();
+    if (!regs)
+      return {};
     return std::vector<uint8_t>(regs, regs + 32);
   }
 
@@ -48,15 +48,16 @@ class EmulatorWrapper {
   }
 
   // Загрузка hex‑файла
-  void load_hex(const std::string& path) {
+  void load_hex(const std::string &path) {
     std::ifstream file(path);
-    if (!file) throw std::runtime_error("Cannot open file: " + path);
+    if (!file)
+      throw std::runtime_error("Cannot open file: " + path);
     ATmega328P::load_hex(*facade_, file);
   }
 
   uint64_t get_cycle_count() { return facade_->get_cycle_count(); }
 
- private:
+private:
   std::unique_ptr<IEmulatorFacade> facade_;
 };
 

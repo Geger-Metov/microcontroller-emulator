@@ -7,7 +7,7 @@
 
 // Статическое ОЗУ (SRAM)
 class SRAMDevice : public IMemoryMapped {
- public:
+public:
   explicit SRAMDevice(size_t size_bytes)
       : data_(size_bytes, 0x00), size_(size_bytes) {}
 
@@ -25,14 +25,14 @@ class SRAMDevice : public IMemoryMapped {
 
   uint32_t size() const override { return size_; }
 
- private:
+private:
   std::vector<uint8_t> data_;
   uint32_t size_;
 };
 
 // Flash-память (только чтение через шину)
 class FlashDevice : public IMemoryMapped {
- public:
+public:
   explicit FlashDevice(size_t size_bytes)
       : data_(size_bytes, 0xFF), size_(size_bytes) {}
 
@@ -54,7 +54,7 @@ class FlashDevice : public IMemoryMapped {
    *
    * @note Not real AVR flash programming.
    */
-  void load_image(uint32_t offset, const uint8_t* src, size_t len) {
+  void load_image(uint32_t offset, const uint8_t *src, size_t len) {
     if (offset + len > size_) {
       throw std::out_of_range("FlashDevice::load_image");
     }
@@ -65,9 +65,9 @@ class FlashDevice : public IMemoryMapped {
   // Future real flash semantics
   void erase_page(uint32_t page);
 
-  void write_page(uint32_t page, const uint8_t* buffer);
+  void write_page(uint32_t page, const uint8_t *buffer);
 
- private:
+private:
   std::vector<uint8_t> data_;
   uint32_t size_;
 };

@@ -14,7 +14,7 @@
  * - vector fetch
  */
 class AVR_CPU : public ICPU, public IInterruptSink {
- public:
+public:
   explicit AVR_CPU(std::unique_ptr<IDecoder> decoder);
 
   // IInterruptSink
@@ -26,24 +26,24 @@ class AVR_CPU : public ICPU, public IInterruptSink {
   // может быть пустым, если у CPU нет внутренней задержки
   void tick(uint64_t cycles) override;
 
-  void attach_data_bus(IDataBus* bus) { data_bus_ = bus; }
-  void attach_code_bus(ICodeBus* bus) { code_bus_ = bus; }
-  void set_register_file(IRegisterFile* rf) { regfile_ = rf; }
-  void set_sreg_device(ISREG* sreg) { sreg_ = sreg; }
+  void attach_data_bus(IDataBus *bus) { data_bus_ = bus; }
+  void attach_code_bus(ICodeBus *bus) { code_bus_ = bus; }
+  void set_register_file(IRegisterFile *rf) { regfile_ = rf; }
+  void set_sreg_device(ISREG *sreg) { sreg_ = sreg; }
 
   // Отладка
   uint32_t get_pc() const override { return pc_; }
   uint32_t get_sp() const override { return sp_; }
   uint8_t get_sreg() const override { return sreg_->value(); }
-  const uint8_t* get_registers() const override {
+  const uint8_t *get_registers() const override {
     return regfile_ ? &regfile_->ref(0) : nullptr;
   }
 
   // Очередной accessor
-  IRegisterFile& registers() { return *regfile_; }
-  const IRegisterFile& registers() const { return *regfile_; }
-  ICodeBus& code_bus() { return *code_bus_; }
-  const ICodeBus& code_bus() const { return *code_bus_; }
+  IRegisterFile &registers() { return *regfile_; }
+  const IRegisterFile &registers() const { return *regfile_; }
+  ICodeBus &code_bus() { return *code_bus_; }
+  const ICodeBus &code_bus() const { return *code_bus_; }
 
   // Специфичные для AVR методы, используемые обработчиками инструкций
   void set_flag(uint8_t flag, bool value);
@@ -82,11 +82,11 @@ class AVR_CPU : public ICPU, public IInterruptSink {
     return code_bus_->read_word(word_addr);
   }
 
- private:
-  IDataBus* data_bus_ = nullptr;  // Подключается извне
-  ICodeBus* code_bus_ = nullptr;
-  IRegisterFile* regfile_ = nullptr;
-  ISREG* sreg_ = nullptr;
+private:
+  IDataBus *data_bus_ = nullptr; // Подключается извне
+  ICodeBus *code_bus_ = nullptr;
+  IRegisterFile *regfile_ = nullptr;
+  ISREG *sreg_ = nullptr;
   uint32_t pc_ = 0;
   uint8_t pc_width_bytes_ = 2;
   uint16_t sp_ = 0;

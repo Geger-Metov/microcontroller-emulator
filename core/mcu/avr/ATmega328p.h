@@ -10,19 +10,19 @@ class EmulatorFacade;
 
 // Сборка конкретного микроконтроллера ATmega328P
 class ATmega328P {
- public:
+public:
   // Создать полностью сконфигурированный эмулятор
   static std::unique_ptr<IEmulatorFacade> create();
 
   // ъъ
-  static void load_hex(IEmulatorFacade& facade, std::istream& hex_stream);
+  static void load_hex(IEmulatorFacade &facade, std::istream &hex_stream);
 
- private:
+private:
   // Вспомогательные методы для создания устройств
   static std::unique_ptr<MCUContext> build_context();
-  static void build_memory_map(MCUContext& ctx);
-  static void connect_cpu(MCUContext& ctx);
-  static void connect_external_pins(MCUContext& ctx);
+  static void build_memory_map(MCUContext &ctx);
+  static void connect_cpu(MCUContext &ctx);
+  static void connect_external_pins(MCUContext &ctx);
 };
 
 /*

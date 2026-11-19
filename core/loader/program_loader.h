@@ -17,8 +17,8 @@ struct ProgramImage {
  * Интерфейс загрузчика программы
  */
 class IProgramLoader {
- public:
+public:
   virtual ~IProgramLoader() = default;
 
-  virtual ProgramImage load(const HexImage& hex) = 0;
+  virtual ProgramImage load(const HexImage &hex) = 0;
 };

@@ -2,7 +2,6 @@
 
 #include <stdexcept>
 
-#include "../decoder/avr_decoder.h"
 #include "AVRExecutionContext.h"
 
 AVR_CPU::AVR_CPU(std::unique_ptr<IDecoder> decoder)
@@ -11,9 +10,12 @@ AVR_CPU::AVR_CPU(std::unique_ptr<IDecoder> decoder)
 void AVR_CPU::reset() {
   if (!regfile_)
     throw std::runtime_error("AVR_CPU: register file not attached");
-  if (!sreg_) throw std::runtime_error("AVR_CPU: SREG device not attached");
-  if (!data_bus_) throw std::runtime_error("AVR_CPU: data bus not attached");
-  if (!code_bus_) throw std::runtime_error("AVR_CPU: code bus not attached");
+  if (!sreg_)
+    throw std::runtime_error("AVR_CPU: SREG device not attached");
+  if (!data_bus_)
+    throw std::runtime_error("AVR_CPU: data bus not attached");
+  if (!code_bus_)
+    throw std::runtime_error("AVR_CPU: code bus not attached");
 
   pc_ = 0;
   sp_ = initial_sp_;
@@ -47,7 +49,7 @@ void AVR_CPU::step() {
 
   // 3. INITIAL DECODE
   avr::DecodedInstruction decoded{};
-  const avr::InstructionDesc* desc = decoder_->decode(first_word, decoded);
+  const avr::InstructionDesc *desc = decoder_->decode(first_word, decoded);
 
   if (!desc) {
     fprintf(stderr, "[CPU] Unknown instruction at PC=0x%X, opcode=0x%04X\n",
@@ -104,8 +106,9 @@ void AVR_CPU::step() {
 uint8_t AVR_CPU::instruction_length_at(uint32_t pc) const {
   uint16_t op = read_program_word(pc);
   avr::DecodedInstruction decoded;
-  const auto* desc = decoder_->decode(op, decoded);
-  if (!desc) throw std::runtime_error("Illegal AVR instruction skip decode");
+  const auto *desc = decoder_->decode(op, decoded);
+  if (!desc)
+    throw std::runtime_error("Illegal AVR instruction skip decode");
   return desc->length;
 }
 
@@ -156,7 +159,7 @@ void AVR_CPU::push_pc(uint32_t pc) {
   // uint32_t byte_pc = pc * pc_width_bytes_;
   for (int i = pc_width_bytes_ - 1; i >= 0; --i) {
     uint8_t byte = static_cast<uint8_t>(
-        (pc >> (8 * i)) & 0xFF);  // использовать ли byte_pc вместо pc?
+        (pc >> (8 * i)) & 0xFF); // использовать ли byte_pc вместо pc?
     push8(byte);
   }
 }
@@ -191,7 +194,7 @@ void AVR_CPU::raise_interrupt(uint16_t vector) {
 void AVR_CPU::service_interrupt(uint32_t return_pc) {
   interrupt_pending_ = false;
   push_pc(return_pc);
-  set_flag(7, false);  // clear I flag
+  set_flag(7, false); // clear I flag
   pc_ = pending_interrupt_vector_;
   pc_modified_ = true;
 }

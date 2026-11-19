@@ -21,7 +21,7 @@ enum class HexRecordType : uint8_t {
  */
 struct HexRecord {
   HexRecordType type;
-  uint32_t address;  // уже с учётом extended address
+  uint32_t address; // уже с учётом extended address
   std::vector<uint8_t> data;
 };
 
@@ -33,12 +33,12 @@ struct HexImage {
 };
 
 class HexParser {
- public:
+public:
   ~HexParser() = default;
-  HexImage parse(std::istream& input);
+  HexImage parse(std::istream &input);
 
- private:
-  bool verifyChecksum(const std::string& line);
-  HexRecord parseLine(const std::string& line, uint32_t upper_linear_base);
-  uint8_t hexByte(const std::string& str, size_t pos);
+private:
+  bool verifyChecksum(const std::string &line);
+  HexRecord parseLine(const std::string &line, uint32_t upper_linear_base);
+  uint8_t hexByte(const std::string &str, size_t pos);
 };

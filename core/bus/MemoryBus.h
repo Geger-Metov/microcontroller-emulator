@@ -16,14 +16,14 @@
  * - тикает устройства, поддерживающие ITickable
  */
 class MemoryBus : public IDataBus {
- public:
+public:
   MemoryBus() = default;
 
   /**
    * @brief Зарегистрировать устройство в диапазоне [start, end] (включительно)
    * @warning bus не владеет устройством (lifetime(ЖЦ) управляется MCU)
    */
-  void map(uint32_t start, uint32_t end, IMemoryMapped* dev) {
+  void map(uint32_t start, uint32_t end, IMemoryMapped *dev) {
     if (start > end) {
       throw std::logic_error("MemoryBus::map: invalid range");
     }
@@ -34,7 +34,7 @@ class MemoryBus : public IDataBus {
     }
 
     // Проверка на пересечение диапазонов
-    for (const auto& [r_start, info] : devices_) {
+    for (const auto &[r_start, info] : devices_) {
       if (!(end < r_start || start > info.end)) {
         throw std::logic_error("MemoryBus::map: overlapping ranges");
       }
@@ -43,7 +43,7 @@ class MemoryBus : public IDataBus {
     devices_[start] = MappedInfo{dev, start, end};
 
     // Если устройство поддерживает tick — добавляем в отдельный список
-    if (auto* t = dynamic_cast<ITickable*>(dev)) {
+    if (auto *t = dynamic_cast<ITickable *>(dev)) {
       tickables_.push_back(t);
     }
     // отладка
@@ -54,26 +54,26 @@ class MemoryBus : public IDataBus {
   // ===== IBus =====
 
   uint8_t read(uint32_t addr) const override {
-    const auto& info = find_device(addr);
+    const auto &info = find_device(addr);
     uint32_t offset = addr - info.start;
     return info.device->read(offset);
   }
 
   void write(uint32_t addr, uint8_t value) override {
-    auto& info = find_device(addr);
+    auto &info = find_device(addr);
     uint32_t offset = addr - info.start;
     info.device->write(offset, value);
   }
 
   void tick(uint64_t cycles) override {
-    for (auto* t : tickables_) {
+    for (auto *t : tickables_) {
       t->tick(cycles);
     }
   }
 
- private:
+private:
   struct MappedInfo {
-    IMemoryMapped* device;  // non-owning
+    IMemoryMapped *device; // non-owning
     uint32_t start;
     uint32_t end;
   };
@@ -82,7 +82,7 @@ class MemoryBus : public IDataBus {
   std::map<uint32_t, MappedInfo> devices_;
 
   // отдельный список для tickable устройств
-  std::vector<ITickable*> tickables_;
+  std::vector<ITickable *> tickables_;
 #if 0
   /**
    * Найти устройство по адресу
@@ -130,7 +130,7 @@ class MemoryBus : public IDataBus {
   }
 #endif
 
-  MappedInfo& find_device(uint32_t addr) {
+  MappedInfo &find_device(uint32_t addr) {
     auto it = devices_.upper_bound(addr);
     if (it == devices_.begin()) {
       fprintf(stderr,
@@ -147,7 +147,7 @@ class MemoryBus : public IDataBus {
               addr, it->first, it->second.end, it->second.device);
       // Выведем всю карту для анализа
       fprintf(stderr, "Full map:\n");
-      for (const auto& [start, info] : devices_) {
+      for (const auto &[start, info] : devices_) {
         fprintf(stderr, "  [0x%04X-0x%04X] -> %p\n", start, info.end,
                 info.device);
       }
@@ -157,7 +157,7 @@ class MemoryBus : public IDataBus {
     return it->second;
   }
 
-  const MappedInfo& find_device(uint32_t addr) const {
+  const MappedInfo &find_device(uint32_t addr) const {
     auto it = devices_.upper_bound(addr);
     if (it == devices_.begin()) {
       fprintf(stderr,
@@ -174,7 +174,7 @@ class MemoryBus : public IDataBus {
               addr, it->first, it->second.end, it->second.device);
       // Выведем всю карту для анализа
       fprintf(stderr, "Full map:\n");
-      for (const auto& [start, info] : devices_) {
+      for (const auto &[start, info] : devices_) {
         fprintf(stderr, "  [0x%04X-0x%04X] -> %p\n", start, info.end,
                 info.device);
       }

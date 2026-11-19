@@ -8,16 +8,16 @@
 enum class SREGFlag : uint8_t { C, Z, N, V, S, H, T, I };
 
 class AVRExecutionContext {
- public:
-  AVRExecutionContext(AVR_CPU& cpu, IRegisterFile& regs, ISREG& sreg,
-                      IDataBus& data_bus)
+public:
+  AVRExecutionContext(AVR_CPU &cpu, IRegisterFile &regs, ISREG &sreg,
+                      IDataBus &data_bus)
       : cpu_(cpu), regs_(regs), sreg_(sreg), data_bus_(data_bus) {}
 
-  AVR_CPU& cpu() { return cpu_; }
-  const AVR_CPU& cpu() const { return cpu_; }
+  AVR_CPU &cpu() { return cpu_; }
+  const AVR_CPU &cpu() const { return cpu_; }
 
-  IRegisterFile& regs() { return regs_; }
-  const IRegisterFile& regs() const { return regs_; }
+  IRegisterFile &regs() { return regs_; }
+  const IRegisterFile &regs() const { return regs_; }
 
   uint8_t read_reg(uint8_t index) const { return regs_.read_reg(index); }
   void write_reg(uint8_t index, uint8_t value) {
@@ -34,8 +34,8 @@ class AVRExecutionContext {
     regs_.write_reg(low + 1, value >> 8);
   }
 
-  ISREG& sreg() { return sreg_; }
-  const ISREG& sreg() const { return sreg_; }
+  ISREG &sreg() { return sreg_; }
+  const ISREG &sreg() const { return sreg_; }
 
   void set_flag(SREGFlag flag, bool value) {
     sreg_.set_flag(static_cast<uint8_t>(flag), value);
@@ -63,9 +63,9 @@ class AVRExecutionContext {
     return cpu().code_bus().read_word(word_addr);
   }
 
- private:
-  AVR_CPU& cpu_;
-  IRegisterFile& regs_;
-  ISREG& sreg_;
-  IDataBus& data_bus_;
+private:
+  AVR_CPU &cpu_;
+  IRegisterFile &regs_;
+  ISREG &sreg_;
+  IDataBus &data_bus_;
 };

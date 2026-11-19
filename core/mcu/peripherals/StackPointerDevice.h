@@ -4,8 +4,8 @@
 #include "../../interfaces/Interfaces.h"
 
 class StackPointerDevice : public IMemoryMapped {
- public:
-  explicit StackPointerDevice(AVR_CPU* cpu) : cpu_(cpu) {}
+public:
+  explicit StackPointerDevice(AVR_CPU *cpu) : cpu_(cpu) {}
 
   uint8_t read(uint32_t offset) const override {
     uint16_t sp = cpu_->get_sp();
@@ -27,6 +27,6 @@ class StackPointerDevice : public IMemoryMapped {
 
   uint32_t size() const override { return 2; }
 
- private:
-  AVR_CPU* cpu_;
+private:
+  AVR_CPU *cpu_;
 };

@@ -13,7 +13,8 @@ Timer0::Timer0() {
   TIFR0.on_write([this](uint8_t v) {
     uint8_t cur = TIFR0.value();
 
-    if (v & 0x01) cur &= ~0x01;
+    if (v & 0x01)
+      cur &= ~0x01;
 
     TIFR0.set(cur);
   });
@@ -25,7 +26,8 @@ void Timer0::tick(uint64_t cycles) {
   uint8_t cs = TCCR0B.value() & 0x07;
 
   uint16_t divisor = prescaler_divisors[cs];
-  if (divisor == 0) return;
+  if (divisor == 0)
+    return;
 
   prescaler_accum_ += cycles;
   while (prescaler_accum_ >= divisor) {
@@ -52,35 +54,35 @@ void Timer0::check_overflow() {
 
 uint8_t Timer0::read(uint32_t offset) const {
   switch (offset) {
-    case 0x00:
-      return TCCR0B.read(0);
-    case 0x01:
-      return TCNT0.read(0);
-    case 0x02:
-      return TIMSK0.read(0);
-    case 0x03:
-      return TIFR0.read(0);
-    default:
-      throw std::out_of_range("Timer0::read invalid offset");
+  case 0x00:
+    return TCCR0B.read(0);
+  case 0x01:
+    return TCNT0.read(0);
+  case 0x02:
+    return TIMSK0.read(0);
+  case 0x03:
+    return TIFR0.read(0);
+  default:
+    throw std::out_of_range("Timer0::read invalid offset");
   }
 }
 
 void Timer0::write(uint32_t offset, uint8_t value) {
   switch (offset) {
-    case 0x00:
-      TCCR0B.write(0, value);
-      break;
-    case 0x01:
-      TCNT0.write(0, value);
-      break;
-    case 0x02:
-      TIMSK0.write(0, value);
-      break;
-    case 0x03:
-      TIFR0.write(0, value);
-      break;
-    default:
-      throw std::out_of_range("Timer0::write invalid offset");
+  case 0x00:
+    TCCR0B.write(0, value);
+    break;
+  case 0x01:
+    TCNT0.write(0, value);
+    break;
+  case 0x02:
+    TIMSK0.write(0, value);
+    break;
+  case 0x03:
+    TIFR0.write(0, value);
+    break;
+  default:
+    throw std::out_of_range("Timer0::write invalid offset");
   }
 }
 

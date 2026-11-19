@@ -7,10 +7,10 @@ enum class PinDriveMode { HiZ, DriveLow, DriveHigh, PullUp };
 enum class WireLevel { Floating, Low, High, Conflict };
 
 class Wire {
- public:
+public:
   class Endpoint {
-   public:
-    explicit Endpoint(Wire& wire) : wire_(wire) {
+  public:
+    explicit Endpoint(Wire &wire) : wire_(wire) {
       id_ = wire_.register_endpoint();
     }
 
@@ -18,8 +18,8 @@ class Wire {
 
     WireLevel read() const { return wire_.resolve(); }
 
-   private:
-    Wire& wire_;
+  private:
+    Wire &wire_;
     size_t id_;
   };
 
@@ -37,27 +37,31 @@ class Wire {
 
     for (auto d : drivers_) {
       switch (d) {
-        case PinDriveMode::DriveLow:
-          low = true;
-          break;
-        case PinDriveMode::DriveHigh:
-          high = true;
-          break;
-        case PinDriveMode::PullUp:
-          pullup = true;
-          break;
-        case PinDriveMode::HiZ:
-          break;
+      case PinDriveMode::DriveLow:
+        low = true;
+        break;
+      case PinDriveMode::DriveHigh:
+        high = true;
+        break;
+      case PinDriveMode::PullUp:
+        pullup = true;
+        break;
+      case PinDriveMode::HiZ:
+        break;
       }
     }
-    if (low && high) return WireLevel::Conflict;
-    if (low) return WireLevel::Low;
-    if (high) return WireLevel::High;
-    if (pullup) return WireLevel::High;
+    if (low && high)
+      return WireLevel::Conflict;
+    if (low)
+      return WireLevel::Low;
+    if (high)
+      return WireLevel::High;
+    if (pullup)
+      return WireLevel::High;
 
-    return WireLevel::Floating;  // все HiZ = плавающий уровень
+    return WireLevel::Floating; // все HiZ = плавающий уровень
   }
 
- private:
+private:
   std::vector<PinDriveMode> drivers_;
 };

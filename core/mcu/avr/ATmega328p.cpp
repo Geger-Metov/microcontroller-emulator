@@ -1,7 +1,5 @@
 #include "ATmega328p.h"
 
-#include <stdexcept>
-
 #include "../../bus/BasicMemoryDevices.h"
 #include "../../bus/CodeBus.h"
 #include "../../bus/MemoryBus.h"
@@ -58,7 +56,7 @@ std::unique_ptr<IEmulatorFacade> ATmega328P::create() {
   return facade;
 }
 
-void ATmega328P::connect_cpu(MCUContext& ctx) {
+void ATmega328P::connect_cpu(MCUContext &ctx) {
   ctx.cpu->attach_data_bus(ctx.data_bus.get());
   ctx.cpu->attach_code_bus(ctx.code_bus.get());
   ctx.cpu->set_register_file(ctx.regfile.get());
@@ -92,7 +90,7 @@ std::unique_ptr<MCUContext> ATmega328P::build_context() {
   auto decoder = std::make_unique<AVRDecoder>(
       avr::avre_plus_instruction_table, avr::avre_plus_instruction_table_size);
   ctx->cpu = std::make_unique<AVR_CPU>(std::move(decoder));
-  ctx->cpu->set_initial_sp(0x08FF);  // RAMEND
+  ctx->cpu->set_initial_sp(0x08FF); // RAMEND
 
   //
   ctx->sp_device = std::make_unique<StackPointerDevice>(ctx->cpu.get());
@@ -105,7 +103,7 @@ std::unique_ptr<MCUContext> ATmega328P::build_context() {
   return ctx;
 }
 
-void ATmega328P::build_memory_map(MCUContext& ctx) {
+void ATmega328P::build_memory_map(MCUContext &ctx) {
   ctx.data_bus->map(0x0000, 0x001F, ctx.regfile.get());
   ctx.data_bus->map(0x0023, 0x0025, ctx.gpioB.get());
   ctx.data_bus->map(0x0029, 0x002B, ctx.gpioD.get());
@@ -114,29 +112,12 @@ void ATmega328P::build_memory_map(MCUContext& ctx) {
 
   ctx.data_bus->map(0x0045, 0x0045, &ctx.timer0->TCCR0B);
   ctx.data_bus->map(0x0046, 0x0046, &ctx.timer0->TCNT0);
-  ctx.data_bus->map(0x006E, 0x006E, &ctx.timer0->TIMSK0);
-  ctx.data_bus->map(0x0035, 0x0035, &ctx.timer0->TIFR0);
-
-  ctx.data_bus->map(0x005D, 0x005E, ctx.sp_device.get());  // SPL, SPH
-
-  ctx.code_bus->map(0x0000, 0x3FFF, ctx.flash.get());
-}
-
-void ATmega328P::build_memory_map(MCUContext& ctx) {
-  ctx.data_bus->map(0x0000, 0x001F, ctx.regfile.get());
-  ctx.data_bus->map(0x0023, 0x0025, ctx.gpioB.get());
-  ctx.data_bus->map(0x0029, 0x002B, ctx.gpioD.get());
-  ctx.data_bus->map(0x005F, 0x005F, ctx.sreg.get());
-  ctx.data_bus->map(0x0100, 0x08FF, ctx.sram.get());
-
-  ctx.data_bus->map(0x0045, 0x0045, &ctx.timer0->TCCR0B);
-  ctx.data_bus->map(0x0046, 0x0046, &ctx.timer0->TCNT0);
-  ctx.data_bus->map(0x006E, 0x006E, &ctx.timer0->TIMSK0);  // ext I/O
-  ctx.data_bus->map(0x0035, 0x0035, &ctx.timer0->TIFR0);   // обычный I/O +0x20
+  ctx.data_bus->map(0x006E, 0x006E, &ctx.timer0->TIMSK0); // ext I/O
+  ctx.data_bus->map(0x0035, 0x0035, &ctx.timer0->TIFR0);  // обычный I/O +0x20
   // или так правильно?
   // ctx.data_bus->map(0x0055, 0x0055, &ctx.timer0->TIFR0);
 
-  ctx.data_bus->map(0x005D, 0x005E, ctx.sp_device.get());  // SPL, SPH
+  ctx.data_bus->map(0x005D, 0x005E, ctx.sp_device.get()); // SPL, SPH
 
   // временная заглушка
   ctx.data_bus->map(0x0041, 0x0041, ctx.eearl.get());
@@ -146,13 +127,13 @@ void ATmega328P::build_memory_map(MCUContext& ctx) {
   ctx.code_bus->map(0x0000, 0x3FFF, ctx.flash.get());
 }
 
-void ATmega328P::load_hex(IEmulatorFacade& facade, std::istream& hex_stream) {
+void ATmega328P::load_hex(IEmulatorFacade &facade, std::istream &hex_stream) {
   // 1. Парсим HEX
   HexParser parser;
   HexImage hex = parser.parse(hex_stream);
 
   // 2. Загружаем под конкретный AVR (ATmega328P)
-  AVRMemoryLayout layout = {32768, 1024, 0, 0};  // flash 32 KiB, eeprom 1 KiB
+  AVRMemoryLayout layout = {32768, 1024, 0, 0}; // flash 32 KiB, eeprom 1 KiB
   AVRProgramLoader loader(layout);
   ProgramImage prog = loader.load(hex);
 

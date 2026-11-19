@@ -3,10 +3,10 @@
 #include <array>
 #include <stdexcept>
 
-#include "../interfaces/Interfaces.h"
+#include "../../interfaces/Interfaces.h"
 
 class RegisterFileDevice : public IMemoryMapped, public IRegisterFile {
- public:
+public:
   RegisterFileDevice() { regs_.fill(0); }
 
   uint8_t read(uint32_t offset) const override {
@@ -24,8 +24,8 @@ class RegisterFileDevice : public IMemoryMapped, public IRegisterFile {
   uint32_t size() const override { return 32; }
 
   // Прямой доступ для CPU
-  uint8_t& operator[](uint8_t idx) { return regs_[idx]; }
-  const uint8_t& operator[](uint8_t idx) const { return regs_[idx]; }
+  uint8_t &operator[](uint8_t idx) { return regs_[idx]; }
+  const uint8_t &operator[](uint8_t idx) const { return regs_[idx]; }
 
   void write_reg(uint8_t index, uint8_t val) override {
     if (index >= 32)
@@ -40,18 +40,18 @@ class RegisterFileDevice : public IMemoryMapped, public IRegisterFile {
 
   void reset() override { regs_.fill(0); }
 
-  uint8_t& ref(uint8_t index) override {
+  uint8_t &ref(uint8_t index) override {
     if (index >= 32)
       throw std::out_of_range("RegisterFileDevice::ref out of range");
 
     return regs_[index];
   }
-  const uint8_t& ref(uint8_t index) const override {
+  const uint8_t &ref(uint8_t index) const override {
     if (index >= 32)
       throw std::out_of_range("RegisterFileDevice::ref const out of range");
     return regs_[index];
   }
 
- private:
+private:
   std::array<uint8_t, 32> regs_;
 };

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../interfaces/Interfaces.h"
+#include "../../interfaces/Interfaces.h"
 
 class SREGDevice : public IMemoryMapped, public ISREG, public IResettable {
- public:
+public:
   uint8_t read(uint32_t) const override { return value_; }
   void write(uint32_t, uint8_t value) override { value_ = value; }
   uint32_t size() const override { return 1; }
@@ -20,7 +20,7 @@ class SREGDevice : public IMemoryMapped, public ISREG, public IResettable {
 
   void reset() override { value_ = 0; }
 
- private:
+private:
   uint8_t value_ = 0;
 };
 /**
