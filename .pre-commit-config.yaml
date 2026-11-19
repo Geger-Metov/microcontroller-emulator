@@ -1,0 +1,18 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.0
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        files: ^gui/
+      - id: ruff-format
+        files: ^gui/
+
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy (gui)
+        language: system
+        entry: bash -c 'cd gui && uv run mypy src'
+        pass_filenames: false
+        files: ^gui/src/.*\.py$

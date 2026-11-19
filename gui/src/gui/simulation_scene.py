@@ -1,23 +1,26 @@
 # simulation_scene.py
-from PySide6.QtWidgets import QGraphicsScene
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QBrush, QColor, QPen
-from interactive_items import ConnectorItem, MovableItem, LEDItem, ButtonItem
-from wire_item import WireItem
-from chip_item import ChipItem
+from PySide6.QtGui import QBrush
+from PySide6.QtWidgets import QGraphicsScene
+
+from gui.chip_item import ChipItem
+from gui.interactive_items import ButtonItem, ConnectorItem, LEDItem, MovableItem
+from gui.wire_item import WireItem
+
 
 class SimulationScene(QGraphicsScene):
     def __init__(self, controller, parent=None):
         super().__init__(parent)
         self.controller = controller
         self.setSceneRect(-60, 0, 660, 400)
-        self.setBackgroundBrush(QBrush(Qt.white))          # временно белый для отладки
+        self.setBackgroundBrush(
+            QBrush(Qt.GlobalColor.white)
+        )  # временно белый для отладки
 
-        self.chip_item = None          # чипа изначально нет
+        self.chip_item = None  # чипа изначально нет
         self.connect_mode = False
         self.first_connector = None
         self.wires = []
-
 
     def show_chip(self):
         """Добавить чип на сцену, если его ещё нет."""
@@ -57,27 +60,33 @@ class SimulationScene(QGraphicsScene):
             self.first_connector = None
 
     def mousePressEvent(self, event):
-        if self.connect_mode and event.button() == Qt.LeftButton:
-            items = self.items(event.scenePos(), Qt.IntersectsItemBoundingRect, Qt.DescendingOrder)
+        if self.connect_mode and event.button() == Qt.MouseButton.LeftButton:
+            items = self.items(
+                event.scenePos(),
+                Qt.ItemSelectionMode.IntersectsItemBoundingRect,
+                Qt.SortOrder.DescendingOrder,
+            )
             for item in items:
                 if isinstance(item, ConnectorItem):
                     if self.first_connector is None:
                         self.first_connector = item
-                        item.setBrush(QBrush(Qt.cyan))   # подсветка первого коннектора
-                        print(f"[Scene] First connector selected")
+                        item.setBrush(
+                            QBrush(Qt.GlobalColor.cyan)
+                        )  # подсветка первого коннектора
+                        print("[Scene] First connector selected")
                     else:
                         if item is not self.first_connector:
                             wire = WireItem(self.first_connector, item)
                             self.addItem(wire)
                             self.wires.append(wire)
-                            print(f"[Scene] Wire created")
-                        self.first_connector.setBrush(QBrush(Qt.yellow))
+                            print("[Scene] Wire created")
+                        self.first_connector.setBrush(QBrush(Qt.GlobalColor.yellow))
                         self.first_connector = None
                     event.accept()
                     return
             # Клик мимо коннектора – сброс
             if self.first_connector:
-                self.first_connector.setBrush(QBrush(Qt.yellow))
+                self.first_connector.setBrush(QBrush(Qt.GlobalColor.yellow))
                 self.first_connector = None
             event.ignore()
         else:
@@ -89,14 +98,14 @@ class SimulationScene(QGraphicsScene):
             return
 
         # Читаем регистры портов B и D
-        DDRB  = 0x24
+        DDRB = 0x24
         PORTB = 0x25
-        DDRD  = 0x2A
+        DDRD = 0x2A
         PORTD = 0x2B
 
-        ddrB  = self.controller.emu.read_memory(DDRB)
+        ddrB = self.controller.emu.read_memory(DDRB)
         portB = self.controller.emu.read_memory(PORTB)
-        ddrD  = self.controller.emu.read_memory(DDRD)
+        ddrD = self.controller.emu.read_memory(DDRD)
         portD = self.controller.emu.read_memory(PORTD)
 
         # Обновляем индикаторы пинов на корпусе чипа
@@ -106,9 +115,9 @@ class SimulationScene(QGraphicsScene):
         pin_output_level = {}
         for i in range(8):
             if (ddrB >> i) & 1:
-                pin_output_level[('B', i)] = (portB >> i) & 1
+                pin_output_level[("B", i)] = (portB >> i) & 1
             if (ddrD >> i) & 1:
-                pin_output_level[('D', i)] = (portD >> i) & 1
+                pin_output_level[("D", i)] = (portD >> i) & 1
 
         # Обновляем состояние периферии по соединённым проводам
         for wire in self.wires:
@@ -120,8 +129,10 @@ class SimulationScene(QGraphicsScene):
             pin_num = None
 
             # Проверяем, принадлежит ли один из коннекторов пину чипа
-            for port_char, connectors_dict in [('B', self.chip_item.pin_connectors_B),
-                                               ('D', self.chip_item.pin_connectors_D)]:
+            for port_char, connectors_dict in [
+                ("B", self.chip_item.pin_connectors_B),
+                ("D", self.chip_item.pin_connectors_D),
+            ]:
                 for num, conn in connectors_dict.items():
                     if conn is start:
                         pin_conn = start
@@ -139,7 +150,7 @@ class SimulationScene(QGraphicsScene):
                     break
 
             if pin_conn is None or (pin_port, pin_num) not in pin_output_level:
-                continue   # не выходной пин или не соединён с чипом
+                continue  # не выходной пин или не соединён с чипом
 
             level = pin_output_level[(pin_port, pin_num)]
 

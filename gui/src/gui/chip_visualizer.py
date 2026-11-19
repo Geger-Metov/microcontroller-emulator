@@ -1,8 +1,16 @@
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsTextItem, QGraphicsEllipseItem, QGraphicsItem
-from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import QPen, QBrush, QColor
-from interactive_items import ConnectorItem, MovableItem, LEDItem, ButtonItem
-from wire_item import WireItem
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QBrush, QColor, QPen
+from PySide6.QtWidgets import (
+    QGraphicsEllipseItem,
+    QGraphicsItem,
+    QGraphicsRectItem,
+    QGraphicsScene,
+    QGraphicsTextItem,
+)
+
+from gui.interactive_items import ButtonItem, ConnectorItem, LEDItem, MovableItem
+from gui.wire_item import WireItem
+
 
 class ChipVisualizer(QGraphicsScene):
     def __init__(self, controller, parent=None):
@@ -33,17 +41,17 @@ class ChipVisualizer(QGraphicsScene):
         self.wires = []
 
     def _create_pin(self, name, x, y):
-        ellipse = QGraphicsEllipseItem(QRectF(x-5, y-5, 10, 10))
+        ellipse = QGraphicsEllipseItem(QRectF(x - 5, y - 5, 10, 10))
         ellipse.setPen(QPen(Qt.GlobalColor.black, 1))
         ellipse.setBrush(QBrush(Qt.GlobalColor.gray))
         self.addItem(ellipse)
 
         label = QGraphicsTextItem(name)
-        label.setPos(x-12, y+5)
+        label.setPos(x - 12, y + 5)
         self.addItem(label)
 
-        conn = ConnectorItem()   # без родителя
-        conn.setPos(x+10, y)
+        conn = ConnectorItem()  # без родителя
+        conn.setPos(x + 10, y)
         self.addItem(conn)
         return ellipse, conn
 
@@ -69,12 +77,16 @@ class ChipVisualizer(QGraphicsScene):
 
     def mousePressEvent(self, event):
         if self.connect_mode and event.button() == Qt.MouseButton.LeftButton:
-            items = self.items(event.scenePos(), Qt.ItemSelectionMode.IntersectsItemBoundingRect, Qt.SortOrder.DescendingOrder)
+            items = self.items(
+                event.scenePos(),
+                Qt.ItemSelectionMode.IntersectsItemBoundingRect,
+                Qt.SortOrder.DescendingOrder,
+            )
             for item in items:
                 if isinstance(item, ConnectorItem):
                     if self.first_connector is None:
                         self.first_connector = item
-                        item.setBrush(QBrush(Qt.GlobalColor.cyan))   # подсветка выбора
+                        item.setBrush(QBrush(Qt.GlobalColor.cyan))  # подсветка выбора
                     else:
                         if item is not self.first_connector:
                             wire = WireItem(self.first_connector, item)
@@ -94,7 +106,7 @@ class ChipVisualizer(QGraphicsScene):
     def refresh_pins(self):
         if not self.controller:
             return
-        DDRB  = 0x24
+        DDRB = 0x24
         PORTB = 0x25
         ddr = self.controller.emu.read_memory(DDRB)
         port = self.controller.emu.read_memory(PORTB)

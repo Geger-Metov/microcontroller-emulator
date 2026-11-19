@@ -1,6 +1,13 @@
-from PySide6.QtWidgets import QGraphicsObject, QGraphicsEllipseItem, QGraphicsRectItem, QGraphicsTextItem, QGraphicsItem
-from PySide6.QtCore import Qt, QRectF, QPointF
-from PySide6.QtGui import QPen, QBrush, QColor, QPainter
+from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtGui import QBrush, QColor, QPen
+from PySide6.QtWidgets import (
+    QGraphicsEllipseItem,
+    QGraphicsItem,
+    QGraphicsObject,
+    QGraphicsRectItem,
+    QGraphicsTextItem,
+)
+
 
 class ConnectorItem(QGraphicsEllipseItem):
     def __init__(self, parent_item=None):
@@ -13,6 +20,7 @@ class ConnectorItem(QGraphicsEllipseItem):
 
     def scene_center(self) -> QPointF:
         return self.scenePos()
+
 
 class MovableItem(QGraphicsObject):
     def __init__(self, parent=None):
@@ -33,6 +41,7 @@ class MovableItem(QGraphicsObject):
     def boundingRect(self) -> QRectF:
         return QRectF(-50, -50, 100, 100)  # переопределяется
 
+
 class LEDItem(MovableItem):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -49,6 +58,7 @@ class LEDItem(MovableItem):
     def boundingRect(self):
         return QRectF(-15, -15, 30, 40)
 
+
 class ButtonItem(MovableItem):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -63,7 +73,9 @@ class ButtonItem(MovableItem):
 
     def set_pressed(self, pressed: bool):
         self.pressed = pressed
-        self.body.setBrush(QBrush(QColor(100, 100, 100) if pressed else QColor(180, 180, 180)))
+        self.body.setBrush(
+            QBrush(QColor(100, 100, 100) if pressed else QColor(180, 180, 180))
+        )
 
     def boundingRect(self):
         return QRectF(-15, -15, 30, 35)

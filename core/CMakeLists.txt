@@ -58,7 +58,7 @@ target_include_directories(emulator_backend PRIVATE
 
 # Если используются какие-то нестандартные флаги, можно добавить
 if(MSVC)
-    target_compile_options(emulator_backend PRIVATE /W4)
+  target_compile_options(emulator_backend PRIVATE /W4)
 else()
-    target_compile_options(emulator_backend PRIVATE -Wall -Wextra)
+  target_compile_options(emulator_backend PRIVATE -Wall -Wextra)
 endif()

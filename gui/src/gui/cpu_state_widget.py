@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGroupBox, QTextEdit
-from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QGroupBox, QLabel, QTextEdit, QVBoxLayout, QWidget
+
 
 class CpuStateWidget(QWidget):
     def __init__(self, parent=None):
@@ -37,9 +37,9 @@ class CpuStateWidget(QWidget):
         self.sp_label.setText(f"SP: 0x{state['sp']:04X}")
         self.sreg_label.setText(f"SREG: 0x{state['sreg']:02X}")
 
-        regs = state.get('regs', [0]*32)
+        regs = state.get("regs", [0] * 32)
         lines = []
         for i in range(0, 32, 8):
-            line = "  ".join(f"R{i+j:02d}:{regs[i+j]:02X}" for j in range(8))
+            line = "  ".join(f"R{i + j:02d}:{regs[i + j]:02X}" for j in range(8))
             lines.append(line)
         self.regs_text.setPlainText("\n".join(lines))

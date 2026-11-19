@@ -1,15 +1,29 @@
 import sys
-from PySide6.QtWidgets import (
-    QStackedWidget, QMainWindow, QWidget, QVBoxLayout, QSplitter, QTextBrowser, 
-    QListWidget, QApplication, QLabel, QPlainTextEdit, QStatusBar, QTabWidget, 
-    QPushButton, QMenu, QToolBar
-    )
-from PySide6.QtCore import Qt, Signal, QTimer
-from PySide6.QtGui import QAction
 
-from sim_view import SimulatorView
-from controller import SimController
-from cpu_state_widget import CpuStateWidget
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import (
+    QApplication,
+    QLabel,
+    QListWidget,
+    QMainWindow,
+    QMenu,
+    QPlainTextEdit,
+    QPushButton,
+    QSplitter,
+    QStackedWidget,
+    QStatusBar,
+    QTabWidget,
+    QTextBrowser,
+    QToolBar,
+    QVBoxLayout,
+    QWidget,
+)
+
+from gui.controller import SimController
+from gui.cpu_state_widget import CpuStateWidget
+from gui.sim_view import SimulatorView
+
 
 # Временные заглушки для неготовых виджетов
 class PlaceholderWidget(QWidget):
@@ -19,6 +33,7 @@ class PlaceholderWidget(QWidget):
         label = QLabel(text)
         layout.addWidget(label)
 
+
 # Заглушки для конкретных виджетов
 class CodeEditor(PlaceholderWidget):
     def __init__(self):
@@ -26,11 +41,12 @@ class CodeEditor(PlaceholderWidget):
         text_edit = QPlainTextEdit()
         text_edit.setPlaceholderText("Здесь будет редактор кода...")
         self.layout().addWidget(text_edit)
-        
+
 
 class ComponentsPanel(PlaceholderWidget):
     def __init__(self):
         super().__init__("Панель компонентов\n(в разработке)")
+
 
 class DocsViewer(PlaceholderWidget):
     def __init__(self):
@@ -157,21 +173,16 @@ class MainWindow(QMainWindow):
         #        color: white;
         #        border-left: 4px solid #2196F3;
         #    }
-        #""")
+        # """)
 
-        panel.addItems([
-            "Симулятор",
-            "Код",
-            "Компоненты",
-            "Документация"
-        ])
+        panel.addItems(["Симулятор", "Код", "Компоненты", "Документация"])
         panel.setCurrentRow(0)
 
         # Связываем выбор с вкладками
         panel.currentRowChanged.connect(self.central_tabs.setCurrentIndex)
 
         return panel
-    
+
     def create_central_tabs(self):
         # Центральная панель с вкладками
         tab_widget = QTabWidget()
@@ -186,10 +197,9 @@ class MainWindow(QMainWindow):
         self.code_editor = CodeEditor()
         self.components_view = ComponentsPanel()
         self.docs_viewer = DocsViewer()
-        
 
         # Добавление вкладок
-        # Интересно, как тут и во всем приложении смену 
+        # Интересно, как тут и во всем приложении смену
         # языка сделать анг/рус
         tab_widget.addTab(self.sim_view, "Симулятор")
         tab_widget.addTab(self.code_editor, "Редактор кода")
@@ -197,7 +207,7 @@ class MainWindow(QMainWindow):
         tab_widget.addTab(self.docs_viewer, "Документация")
 
         # Настройка стиля вкладок
-        #tab_widget.setStyleSheet("""
+        # tab_widget.setStyleSheet("""
         #    QTabWidget::pane {
         #        border: 1px solid #ccc;
         #        background-color: white;
@@ -216,10 +226,10 @@ class MainWindow(QMainWindow):
         #    QTabBar::tab:hover {
         #        background-color: #e0e0e0;
         #    }
-        #""")
+        # """)
 
         return tab_widget
-    
+
     def create_right_panel(self):
         panel = QWidget()
         layout = QVBoxLayout(panel)
@@ -227,7 +237,7 @@ class MainWindow(QMainWindow):
 
         # Заголовок панели с выпадающим меню
         self.right_panel_title = QPushButton("ТЕСТ")
-        #self.right_panel_title.setStyleSheet("""
+        # self.right_panel_title.setStyleSheet("""
         #    QPushButton {
         #        background-color: #4CAF50;
         #        color: white;
@@ -243,24 +253,28 @@ class MainWindow(QMainWindow):
         #    QPushButton::menu-indicator {
         #        image: none;
         #    }
-        #""")
+        # """)
 
         # Меню для переключения режимов правой панели
         self.right_panel_menu = QMenu(self)
         # Добавление действий в меню
-        self.right_panel_menu.addAction("Компоненты", lambda: self.switch_right_panel(0))
-        self.right_panel_menu.addAction("Документация", lambda: self.switch_right_panel(1))
+        self.right_panel_menu.addAction(
+            "Компоненты", lambda: self.switch_right_panel(0)
+        )
+        self.right_panel_menu.addAction(
+            "Документация", lambda: self.switch_right_panel(1)
+        )
         self.right_panel_menu.addAction("Свойства", lambda: self.switch_right_panel(2))
-        
+
         # Устанавливаем меню для кнопки
         self.right_panel_title.setMenu(self.right_panel_menu)
-        
+
         # Стек виджетов для разного контента
         self.right_stack = QStackedWidget()
 
         # 1. Список компонентов
         self.component_list = QListWidget()
-        #self.component_list.setStyleSheet("""
+        # self.component_list.setStyleSheet("""
         #    QListWidget {
         #        border: none;
         #        background-color: white;
@@ -276,12 +290,10 @@ class MainWindow(QMainWindow):
         #        background-color: #e3f2fd;
         #        color: #1565c0;
         #    }
-        #""")
+        # """)
 
         # Примерные компоненты
-        components = [
-            "ATmega328P", "LED", "Button"
-        ]
+        components = ["ATmega328P", "LED", "Button"]
         self.component_list.addItems(components)
 
         # 2. Список документации
@@ -291,25 +303,25 @@ class MainWindow(QMainWindow):
             "📘 Руководство по ATmega328P",
             "📗 Справочник по регистрам",
             "📙 Примеры кода для начинающих",
-            "📕 Протоколы связи: UART, I2C, SPI"
+            "📕 Протоколы связи: UART, I2C, SPI",
         ]
         self.docs_list.addItems(docs)
 
-        # Не уверен, что это нужно 
+        # Не уверен, что это нужно
         # 3.
         self.properties_view = QTextBrowser()
-        #self.properties_view.setStyleSheet("""
+        # self.properties_view.setStyleSheet("""
         #    QTextBrowser {
         #        background-color: white;
         #        border: none;
         #        padding: 10px;
         #        font-size: 12px;
         #    }
-        #""")
-        #self.properties_view.setHtml("""
+        # """)
+        # self.properties_view.setHtml("""
         #    <h3 style='color: #4CAF50;'>Свойства</h3>
         #    <p>Выберите компонент для просмотра свойств</p>
-        #""")
+        # """)
 
         # Добавляем виджеты в стек
         self.right_stack.addWidget(self.component_list)
@@ -321,12 +333,12 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.right_stack)
 
         return panel
-    
+
     def create_bottom_panel(self):
         panel = QTextBrowser()
-        #panel.setMaximumHeight(200)
-        #panel.setMinimumHeight(150)
-        #panel.setStyleSheet("""
+        # panel.setMaximumHeight(200)
+        # panel.setMinimumHeight(150)
+        # panel.setStyleSheet("""
         #    QTextBrowser {
         #        background-color: #1e1e1e;
         #        color: #d4d4d4;
@@ -335,20 +347,35 @@ class MainWindow(QMainWindow):
         #        border-top: 2px solid #4CAF50;
         #        padding: 5px;
         #    }
-        #""")
+        # """)
 
-                # Заголовок и начальное сообщение
-        panel.append("<span style='color:#4CAF50'>╔═══════════════════════════════════════════════════════╗</span>")
-        panel.append("<span style='color:#4CAF50'>║</span><b>  MCU SIMULATOR TERMINAL v0.1</b>".ljust(53) + "<span style='color:#4CAF50'>║</span>")
-        panel.append("<span style='color:#4CAF50'>╚═══════════════════════════════════════════════════════╝</span>")
+        # Заголовок и начальное сообщение
+        panel.append(
+            "<span style='color:#4CAF50'>╔═══════════════════════════════════════════════════════╗</span>"
+        )
+        panel.append(
+            "<span style='color:#4CAF50'>║</span><b>  MCU SIMULATOR TERMINAL v0.1</b>".ljust(
+                53
+            )
+            + "<span style='color:#4CAF50'>║</span>"
+        )
+        panel.append(
+            "<span style='color:#4CAF50'>╚═══════════════════════════════════════════════════════╝</span>"
+        )
         panel.append("")
-        panel.append("<span style='color:#4da6ff'>[INFO]</span> Симулятор инициализирован успешно")
+        panel.append(
+            "<span style='color:#4da6ff'>[INFO]</span> Симулятор инициализирован успешно"
+        )
         panel.append("<span style='color:#4da6ff'>[INFO]</span> Готов к работе")
-        panel.append("<span style='color:#ffcc00'>[WARN]</span> Некоторые модули находятся в стадии разработки")
-        panel.append("<span style='color:#4da6ff'>[INFO]</span> Используйте левую панель для навигации")
+        panel.append(
+            "<span style='color:#ffcc00'>[WARN]</span> Некоторые модули находятся в стадии разработки"
+        )
+        panel.append(
+            "<span style='color:#4da6ff'>[INFO]</span> Используйте левую панель для навигации"
+        )
 
         return panel
-    
+
     # перенести в sim_view, не всем вкладкам нужно
     def create_toolbar(self):
         toolbar = QToolBar("Главная панель")
@@ -367,7 +394,7 @@ class MainWindow(QMainWindow):
             ("📂", "Открыть проект", self.open_project),
             ("", "", None),
             ("⚙️", "Настройки", self.open_settings),
-            ("❓", "Справка", self.open_help)
+            ("❓", "Справка", self.open_help),
         ]
 
         for icon, text, callback in actions:
@@ -387,25 +414,25 @@ class MainWindow(QMainWindow):
         # При выборе компонента
         self.component_list.itemClicked.connect(self.on_component_selected)
         self.docs_list.itemClicked.connect(self.on_doc_selected)
-    
+
     def on_central_tab_changed(self, index):
         """При смене вкладки меняем содержимое правой панели"""
         titles = ["📋 Компоненты", "📚 Документация", "📚 Документация", "⚙️ Свойства"]
         panel_index = [0, 1, 0, 2]  # Какой виджет показывать для каждой вкладки
-        
+
         self.right_panel_title.setText(titles[index])
         self.right_stack.setCurrentIndex(panel_index[index])
-        
+
         # Обновляем статус бар
         tab_names = ["Симулятор", "Редактор кода", "Компоненты", "Документация"]
         self.status_bar.showMessage(f"Активная вкладка: {tab_names[index]}")
-    
+
     def switch_right_panel(self, index):
         self.right_stack.setCurrentIndex(index)
         titles = ["📋 Компоненты", "📚 Документация", "⚙️ Свойства", "🖥️ CPU"]
         if index < len(titles):
             self.right_panel_title.setText(titles[index])
-    
+
     def on_component_selected(self, item):
         component = item.text()
         if component == "ATmega328P":
@@ -417,9 +444,11 @@ class MainWindow(QMainWindow):
         else:
             # Для других компонентов – возможно скрываем чип или ничего
             pass
-        
+
         # Показываем в терминале
-        self.bottom_panel.append(f"<span style='color:#4da6ff'>[COMPONENT]</span> Выбран компонент: {component[2:]}")
+        self.bottom_panel.append(
+            f"<span style='color:#4da6ff'>[COMPONENT]</span> Выбран компонент: {component[2:]}"
+        )
 
         # Обновляем свойства
         self.properties_view.setHtml(f"""
@@ -431,59 +460,77 @@ class MainWindow(QMainWindow):
             <hr>
             <p style='color: #666;'><i>Детальные свойства будут доступны после реализации модуля</i></p>
         """)
-        
+
         # Переключаем на вкладку свойств
         self.right_stack.setCurrentIndex(2)
         self.right_panel_title.setText("⚙️ Свойства")
-    
+
     def get_component_type(self, component_name):
         mapping = {
             "ATmega328P": "Микроконтроллер (AVR)",
             "LED": "Светодиод",
-            "Button": "Кнопка"
+            "Button": "Кнопка",
         }
         return mapping.get(component_name, "Неизвестный тип")
-    
+
     def on_doc_selected(self, item):
         """Обработка выбора документации"""
         doc = item.text()
-        self.bottom_panel.append(f"<span style='color:#ffcc00'>[DOCS]</span> Запрошен документ: {doc[2:]}")
-    
+        self.bottom_panel.append(
+            f"<span style='color:#ffcc00'>[DOCS]</span> Запрошен документ: {doc[2:]}"
+        )
+
     def start_simulation(self):
         """Запуск симуляции"""
-        self.bottom_panel.append("<span style='color:#4da6ff'>[SIM]</span> Запуск симуляции...")
+        self.bottom_panel.append(
+            "<span style='color:#4da6ff'>[SIM]</span> Запуск симуляции..."
+        )
         self.status_bar.showMessage("Симуляция выполняется")
-    
+
     def pause_simulation(self):
         """Пауза симуляции"""
-        self.bottom_panel.append("<span style='color:#ffcc00'>[SIM]</span> Симуляция на паузе")
-    
+        self.bottom_panel.append(
+            "<span style='color:#ffcc00'>[SIM]</span> Симуляция на паузе"
+        )
+
     def stop_simulation(self):
         """Остановка симуляции"""
-        self.bottom_panel.append("<span style='color:#ff6600'>[SIM]</span> Симуляция остановлена")
-    
+        self.bottom_panel.append(
+            "<span style='color:#ff6600'>[SIM]</span> Симуляция остановлена"
+        )
+
     def reset_simulation(self):
         """Сброс симуляции"""
-        self.bottom_panel.append("<span style='color:#4da6ff'>[SIM]</span> Симуляция сброшена")
-    
+        self.bottom_panel.append(
+            "<span style='color:#4da6ff'>[SIM]</span> Симуляция сброшена"
+        )
+
     def save_project(self):
         """Сохранение проекта"""
-        self.bottom_panel.append("<span style='color:#4da6ff'>[FILE]</span> Запрос на сохранение проекта")
-    
+        self.bottom_panel.append(
+            "<span style='color:#4da6ff'>[FILE]</span> Запрос на сохранение проекта"
+        )
+
     def open_project(self):
         """Открытие проекта"""
-        self.bottom_panel.append("<span style='color:#4da6ff'>[FILE]</span> Запрос на открытие проекта")
-    
+        self.bottom_panel.append(
+            "<span style='color:#4da6ff'>[FILE]</span> Запрос на открытие проекта"
+        )
+
     def open_settings(self):
         """Открытие настроек"""
-        self.bottom_panel.append("<span style='color:#9966ff'>[SYS]</span> Открытие настроек")
-    
+        self.bottom_panel.append(
+            "<span style='color:#9966ff'>[SYS]</span> Открытие настроек"
+        )
+
     def open_help(self):
         """Открытие справки"""
-        self.bottom_panel.append("<span style='color:#9966ff'>[SYS]</span> Открытие справки")
+        self.bottom_panel.append(
+            "<span style='color:#9966ff'>[SYS]</span> Открытие справки"
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app = QApplication(sys.argv)
     win = MainWindow()
     win.show()

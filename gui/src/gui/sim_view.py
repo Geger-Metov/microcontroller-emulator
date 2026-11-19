@@ -1,17 +1,24 @@
 # sim_view.py
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QGraphicsView, QFileDialog, QSizePolicy
-)
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QBrush, QColor, QPainter
-from simulation_scene import SimulationScene
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QGraphicsView,
+    QHBoxLayout,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
+from gui.simulation_scene import SimulationScene
+
 
 class SimulatorView(QWidget):
     def __init__(self, controller=None):
         super().__init__()
         self.controller = controller
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         layout = QVBoxLayout(self)
 
@@ -38,13 +45,25 @@ class SimulatorView(QWidget):
         self.graphics_view.setScene(self.chip_scene)
 
         # === Критически важные настройки ===
-        self.graphics_view.setRenderHint(QPainter.Antialiasing)
-        self.graphics_view.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)   # растягиваем на всё доступное пространство
-        self.graphics_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.graphics_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.graphics_view.setSceneRect(self.chip_scene.sceneRect())     # явно задаём прямоугольник сцены
-        self.graphics_view.fitInView(self.chip_scene.sceneRect(), Qt.KeepAspectRatio)
-        self.graphics_view.setBackgroundBrush(QBrush(QColor(200, 200, 200)))   # серый фон для контраста
+        self.graphics_view.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.graphics_view.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )  # растягиваем на всё доступное пространство
+        self.graphics_view.setHorizontalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.graphics_view.setVerticalScrollBarPolicy(
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        )
+        self.graphics_view.setSceneRect(
+            self.chip_scene.sceneRect()
+        )  # явно задаём прямоугольник сцены
+        self.graphics_view.fitInView(
+            self.chip_scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio
+        )
+        self.graphics_view.setBackgroundBrush(
+            QBrush(QColor(200, 200, 200))
+        )  # серый фон для контраста
         # =================================
 
         layout.addWidget(self.graphics_view)
@@ -72,7 +91,9 @@ class SimulatorView(QWidget):
         """Автоматически подгонять масштаб сцены при изменении размера виджета."""
         super().resizeEvent(event)
         if self.chip_scene:
-            self.graphics_view.fitInView(self.chip_scene.sceneRect(), Qt.KeepAspectRatio)
+            self.graphics_view.fitInView(
+                self.chip_scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio
+            )
 
     def set_controller(self, ctrl):
         self.controller = ctrl
@@ -100,8 +121,11 @@ class SimulatorView(QWidget):
             self.chip_scene.set_connect_mode(checked)
 
     def _on_load(self):
-        if not self.controller: return
-        path, _ = QFileDialog.getOpenFileName(self, "Open HEX file", "", "Intel HEX (*.hex);;All Files (*)")
+        if not self.controller:
+            return
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Open HEX file", "", "Intel HEX (*.hex);;All Files (*)"
+        )
         if path:
             self.controller.load_hex(path)
 
@@ -112,7 +136,8 @@ class SimulatorView(QWidget):
                 self.update_callback()
 
     def _on_run(self):
-        if not self.controller: return
+        if not self.controller:
+            return
         if self.timer.isActive():
             self.timer.stop()
             self.btn_run.setText("Run")

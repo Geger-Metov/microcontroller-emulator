@@ -1,5 +1,6 @@
+from PySide6.QtGui import QColor, QPainterPath, QPen
 from PySide6.QtWidgets import QGraphicsPathItem
-from PySide6.QtGui import QPainterPath, QPen, QColor
+
 
 class WireItem(QGraphicsPathItem):
     def __init__(self, start_conn, end_conn, parent=None):
