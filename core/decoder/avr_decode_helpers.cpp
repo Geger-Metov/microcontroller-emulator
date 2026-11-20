@@ -16,33 +16,30 @@ void avr::decode_Rd_imm(uint32_t opcode, avr::DecodedInstruction &out) {
 }
 
 void avr::decode_rel7(uint32_t opcode, avr::DecodedInstruction &out) {
-  uint8_t k = (opcode >> 3) & 0x7F;
-
-  // sign extend 7-bit
+  // 7-bit two's complement: -64..63. Must be computed in a signed type,
+  // otherwise `rel` ends up as 0..255 and backward branches go forward.
+  int32_t k = (opcode >> 3) & 0x7F;
   if (k & 0x40)
-    k |= 0x80;
+    k -= 0x80;
 
-  out.rel = static_cast<uint8_t>(k);
+  out.rel = k;
 }
 
 void avr::decode_rel7_s3(uint32_t opcode, avr::DecodedInstruction &out) {
   uint8_t s = opcode & 0x07;
-  uint8_t k = static_cast<uint8_t>((opcode >> 3) & 0x7F);
-
-  // sign extend 7-bit
+  int32_t k = (opcode >> 3) & 0x7F;
   if (k & 0x40)
-    k |= 0x80;
+    k -= 0x80;
 
   out.sreg_bit = s;
   out.rel = k;
 }
 
 void avr::decode_rel12(uint32_t opcode, avr::DecodedInstruction &out) {
-  uint16_t k = opcode & 0x0FFF;
-
-  // sign extend 12-bit
+  // 12-bit two's complement: -2048..2047.
+  int32_t k = opcode & 0x0FFF;
   if (k & 0x0800)
-    k |= 0xF000;
+    k -= 0x1000;
 
   out.rel = k;
 }

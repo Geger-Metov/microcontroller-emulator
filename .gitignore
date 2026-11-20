@@ -7,6 +7,10 @@ __pycache__/
 .ruff_cache/
 .mypy_cache/
 
+# c++ / cmake
+build/
+cmake-build-*/
+
 # my files
 *.md
 !README.md

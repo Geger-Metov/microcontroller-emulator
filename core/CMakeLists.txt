@@ -5,14 +5,41 @@ project(mcu_emulator_backend LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Ищем pybind11 (должен быть установлен через pip)
-find_package(pybind11 REQUIRED)
+option(MCU_BUILD_PYTHON "Build the emulator_backend Python module (needs pybind11)" ON)
+option(MCU_SANITIZE "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
+option(MCU_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
-# Собираем Python-модуль из перечисленных исходников
-pybind11_add_module(emulator_backend
-    # Bindings
-    bindings/emu_bridge.cpp
+# Предупреждения компилятора для цели (используется и тестами).
+function(mcu_apply_warnings target)
+  if(MSVC)
+    target_compile_options(${target} PRIVATE /W4)
+    if(MCU_WARNINGS_AS_ERRORS)
+      target_compile_options(${target} PRIVATE /WX)
+    endif()
+  else()
+    target_compile_options(${target} PRIVATE -Wall -Wextra)
+    if(MCU_WARNINGS_AS_ERRORS)
+      target_compile_options(${target} PRIVATE -Werror)
+    endif()
+  endif()
+endfunction()
 
+# Санитайзеры: PUBLIC, чтобы флаги линковки получили и тесты.
+function(mcu_apply_sanitizers target)
+  if(MCU_SANITIZE)
+    if(MSVC)
+      message(FATAL_ERROR "MCU_SANITIZE is not supported with MSVC")
+    endif()
+    target_compile_options(${target} PUBLIC
+      -fsanitize=address,undefined -fno-sanitize-recover=undefined
+      -fno-omit-frame-pointer)
+    target_link_options(${target} PUBLIC -fsanitize=address,undefined)
+  endif()
+endfunction()
+
+# Ядро эмулятора — статическая библиотека без привязки к Python.
+# Её используют и Python-модуль, и C++-тесты.
+add_library(mcu_core STATIC
     # CPU
     cpu/AVR_CPU.cpp
     cpu/avr_instructions.cpp
@@ -37,9 +64,10 @@ pybind11_add_module(emulator_backend
     # Peripherals
     mcu/peripherals/Timer0.cpp
 )
+set_target_properties(mcu_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Добавляем пути ко всем заголовочным каталогам, чтобы #include "file.h" работали без префиксов
-target_include_directories(emulator_backend PRIVATE
+target_include_directories(mcu_core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/bindings
     ${CMAKE_CURRENT_SOURCE_DIR}/bus
     ${CMAKE_CURRENT_SOURCE_DIR}/cpu
@@ -52,13 +80,13 @@ target_include_directories(emulator_backend PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/mcu/avr
     ${CMAKE_CURRENT_SOURCE_DIR}/mcu/peripherals
 )
+mcu_apply_warnings(mcu_core)
+mcu_apply_sanitizers(mcu_core)
 
-# При необходимости можно задать определения препроцессора
-# target_compile_definitions(emulator_backend PRIVATE ...)
-
-# Если используются какие-то нестандартные флаги, можно добавить
-if(MSVC)
-  target_compile_options(emulator_backend PRIVATE /W4)
-else()
-  target_compile_options(emulator_backend PRIVATE -Wall -Wextra)
+# Python-модуль (pybind11 должен быть установлен, например через pip).
+if(MCU_BUILD_PYTHON)
+  find_package(pybind11 REQUIRED)
+  pybind11_add_module(emulator_backend bindings/emu_bridge.cpp)
+  target_link_libraries(emulator_backend PRIVATE mcu_core)
+  mcu_apply_warnings(emulator_backend)
 endif()

@@ -3,7 +3,7 @@
 #include "../decoder/avr_decode_helpers.h"
 #include "AVRExecutionContext.h"
 
-void avr::exec_NOP(AVRExecutionContext &ctx, const DecodedInstruction &instr) {}
+void avr::exec_NOP(AVRExecutionContext &, const DecodedInstruction &) {}
 
 void avr::exec_RJMP(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.set_pc(ctx.pc() + instr.rel + 1);
@@ -26,11 +26,11 @@ void avr::exec_RCALL(AVRExecutionContext &ctx,
   ctx.set_pc(ctx.pc() + instr.rel + 1);
 }
 
-void avr::exec_RET(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
+void avr::exec_RET(AVRExecutionContext &ctx, const DecodedInstruction &) {
   ctx.set_pc(ctx.pop_pc());
 }
 
-void avr::exec_RETI(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
+void avr::exec_RETI(AVRExecutionContext &ctx, const DecodedInstruction &) {
   ctx.set_pc(ctx.pop_pc());
   ctx.set_flag(SREGFlag::I, true);
 }
@@ -554,13 +554,12 @@ void avr::exec_SBIW(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.set_flag(SREGFlag::S, S);
 }
 
-void avr::exec_IJMP(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
+void avr::exec_IJMP(AVRExecutionContext &ctx, const DecodedInstruction &) {
   uint16_t z = ctx.read_reg16(30); // Z = R31:R30
   ctx.set_pc(z);                   // прямой word‑адрес
 }
 
-void avr::exec_ICALL(AVRExecutionContext &ctx,
-                     const DecodedInstruction &instr) {
+void avr::exec_ICALL(AVRExecutionContext &ctx, const DecodedInstruction &) {
   uint16_t z = ctx.read_reg16(30);
   uint32_t return_pc = ctx.pc() + 1; // для ICALL длина инструкции 1 слово
   ctx.push_pc(return_pc);

@@ -18,7 +18,7 @@ public:
   uint32_t size() const override { return 3; } // num_regs
 
   // ITickable (ничего не делает)
-  void tick(uint64_t cycles) override {}
+  void tick(uint64_t) override {}
 
   // IDevice
   void reset() override;

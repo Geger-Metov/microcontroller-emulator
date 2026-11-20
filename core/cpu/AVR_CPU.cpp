@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 #include "AVRExecutionContext.h"
+#include "avr_instructions.h"
 
 AVR_CPU::AVR_CPU(std::unique_ptr<IDecoder> decoder)
     : decoder_(std::move(decoder)) {}
@@ -112,7 +113,7 @@ uint8_t AVR_CPU::instruction_length_at(uint32_t pc) const {
   return desc->length;
 }
 
-void AVR_CPU::tick(uint64_t cycles) {
+void AVR_CPU::tick(uint64_t) {
   // В данной архитектуре CPU сам продвигает время через step()
   // Метод оставлен для совместимости с ITickable, можно оставить пустым
 }

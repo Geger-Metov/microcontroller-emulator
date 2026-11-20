@@ -12,6 +12,23 @@ permissions:
   contents: read
 
 jobs:
+  core-cpp:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure (Debug, ASan+UBSan, warnings as errors)
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Debug
+          -DMCU_BUILD_PYTHON=OFF
+          -DMCU_SANITIZE=ON
+          -DMCU_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
   gui-python:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
