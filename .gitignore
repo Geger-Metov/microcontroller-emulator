@@ -15,3 +15,6 @@ cmake-build-*/
 *.md
 !README.md
 CMakeUserPresets.json
+
+# собранный Python-модуль
+gui/src/emulator_backend*

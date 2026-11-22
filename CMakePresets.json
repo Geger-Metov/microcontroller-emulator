@@ -1,6 +1,10 @@
 {
   "version": 3,
-  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
   "configurePresets": [
     {
       "name": "debug",
@@ -11,7 +15,8 @@
         "CMAKE_CXX_FLAGS_DEBUG": "-g3 -O0",
         "MCU_BUILD_PYTHON": "OFF",
         "MCU_SANITIZE": "ON",
-        "MCU_WARNINGS_AS_ERRORS": "ON"
+        "MCU_WARNINGS_AS_ERRORS": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
@@ -23,7 +28,8 @@
         "CMAKE_CXX_FLAGS_RELEASE": "-O2 -DNDEBUG",
         "MCU_BUILD_PYTHON": "OFF",
         "MCU_SANITIZE": "OFF",
-        "MCU_WARNINGS_AS_ERRORS": "ON"
+        "MCU_WARNINGS_AS_ERRORS": "ON",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
     },
     {
@@ -38,20 +44,33 @@
     }
   ],
   "buildPresets": [
-    { "name": "debug", "configurePreset": "debug" },
-    { "name": "release", "configurePreset": "release" },
-    { "name": "release-python", "configurePreset": "release-python" }
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "release-python",
+      "configurePreset": "release-python"
+    }
   ],
   "testPresets": [
     {
       "name": "debug",
       "configurePreset": "debug",
-      "output": { "outputOnFailure": true }
+      "output": {
+        "outputOnFailure": true
+      }
     },
     {
       "name": "release",
       "configurePreset": "release",
-      "output": { "outputOnFailure": true }
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

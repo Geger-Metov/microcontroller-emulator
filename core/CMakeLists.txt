@@ -84,10 +84,23 @@ target_include_directories(mcu_core PUBLIC
 mcu_apply_warnings(mcu_core)
 mcu_apply_sanitizers(mcu_core)
 
-# Python-модуль (pybind11 должен быть установлен, например через pip).
+# Python-модуль. pybind11 ставится в venv GUI (uv add --dev pybind11), путь к нему
+# передаётся так: -Dpybind11_DIR="$(python -m pybind11 --cmakedir)"
+# и -DPython_EXECUTABLE=<python из venv>. Готовый emulator_backend*.so кладётся
+# сразу в gui/src, откуда его видит `from emulator_backend import Emulator`.
 if(MCU_BUILD_PYTHON)
-  find_package(pybind11 REQUIRED)
+  set(PYBIND11_FINDPYTHON ON) # современный FindPython (в CMake 4 старые модули удалены)
+  find_package(pybind11 CONFIG QUIET)
+  if(NOT pybind11_FOUND)
+    message(FATAL_ERROR
+      "pybind11 не найден. Укажите его: "
+      "-Dpybind11_DIR=\"$(python -m pybind11 --cmakedir)\" "
+      "и -DPython_EXECUTABLE=<python из venv>. "
+      "Либо соберите без модуля: -DMCU_BUILD_PYTHON=OFF")
+  endif()
   pybind11_add_module(emulator_backend bindings/emu_bridge.cpp)
   target_link_libraries(emulator_backend PRIVATE mcu_core)
+  set_target_properties(emulator_backend PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/gui/src")
   mcu_apply_warnings(emulator_backend)
 endif()
