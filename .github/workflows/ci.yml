@@ -13,21 +13,22 @@ permissions:
 
 jobs:
   core-cpp:
+    name: core-cpp (${{ matrix.preset }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # debug: -g3 -O0 + ASan/UBSan; release: -O2 (ловит UB, зависящее от оптимизации)
+        preset: [debug, release]
     steps:
       - uses: actions/checkout@v7
-      - name: Configure (Debug, ASan+UBSan, warnings as errors)
-        run: >
-          cmake -S . -B build
-          -DCMAKE_BUILD_TYPE=Debug
-          -DMCU_BUILD_PYTHON=OFF
-          -DMCU_SANITIZE=ON
-          -DMCU_WARNINGS_AS_ERRORS=ON
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }}
       - name: Build
-        run: cmake --build build
+        run: cmake --build --preset ${{ matrix.preset }}
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --preset ${{ matrix.preset }}
 
   gui-python:
     runs-on: ubuntu-24.04

@@ -1,0 +1,57 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "debug",
+      "displayName": "Debug: -g3 -O0, ASan+UBSan, warnings as errors (тесты, отладка)",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_FLAGS_DEBUG": "-g3 -O0",
+        "MCU_BUILD_PYTHON": "OFF",
+        "MCU_SANITIZE": "ON",
+        "MCU_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release: -O2, warnings as errors, без Python (тесты оптимизированной сборки)",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_FLAGS_RELEASE": "-O2 -DNDEBUG",
+        "MCU_BUILD_PYTHON": "OFF",
+        "MCU_SANITIZE": "OFF",
+        "MCU_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "release-python",
+      "displayName": "Release: -O2 + модуль emulator_backend для GUI (нужен pybind11)",
+      "inherits": "release",
+      "binaryDir": "${sourceDir}/build/release-python",
+      "cacheVariables": {
+        "MCU_BUILD_PYTHON": "ON",
+        "MCU_WARNINGS_AS_ERRORS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "debug", "configurePreset": "debug" },
+    { "name": "release", "configurePreset": "release" },
+    { "name": "release-python", "configurePreset": "release-python" }
+  ],
+  "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}

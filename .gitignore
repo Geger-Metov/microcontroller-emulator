@@ -14,3 +14,4 @@ cmake-build-*/
 # my files
 *.md
 !README.md
+CMakeUserPresets.json
