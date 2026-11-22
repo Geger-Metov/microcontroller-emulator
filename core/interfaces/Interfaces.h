@@ -47,7 +47,7 @@ public:
   virtual void tick(uint64_t cycles) = 0;
 };
 
-// === не понятно ===
+// Устройство, состояние которого можно вернуть к состоянию после power-on reset
 class IResettable {
 public:
   virtual ~IResettable() = default;
@@ -170,6 +170,20 @@ public:
    * AVR uses word-addressed vectors.
    */
   virtual void raise_interrupt(uint16_t vector) = 0;
+
+  /**
+   * Withdraw a pending request (flag cleared by software, interrupt
+   * disabled in the mask register, ...). No-op if the vector is not pending.
+   */
+  virtual void clear_interrupt(uint16_t vector) = 0;
+
+  /**
+   * Register a callback that the CPU invokes when it actually enters the
+   * vector. Used by peripherals to clear the hardware-cleared interrupt flag
+   * (e.g. TOV0) on interrupt entry.
+   */
+  virtual void set_interrupt_ack_handler(uint16_t vector,
+                                         std::function<void()> on_ack) = 0;
 };
 
 class IRegisterFile : public IResettable {

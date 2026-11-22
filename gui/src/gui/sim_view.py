@@ -1,4 +1,3 @@
-# sim_view.py
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QBrush, QColor, QPainter
 from PySide6.QtWidgets import (

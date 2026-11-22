@@ -45,15 +45,12 @@ void avr::decode_rel12(uint32_t opcode, avr::DecodedInstruction &out) {
 }
 
 void avr::decode_abs22(uint32_t opcode, avr::DecodedInstruction &out) {
-  uint16_t first = opcode & 0xFFFF;
-  uint16_t second = opcode >> 16;
+  // JMP/CALL: 1001 010k kkkk 11mk kkkk kkkk kkkk kkkk — k[21:17] в битах 8..4
+  // первого слова, k[16] в бите 0, k[15:0] во втором слове.
+  uint32_t first = opcode & 0xFFFF;
+  uint32_t second = opcode >> 16;
 
-  uint32_t k = 0;
-  k |= second;
-  k |= ((first >> 3) & 0x3E0000);
-  k |= ((first >> 4) & 0x010000);
-
-  out.imm = k;
+  out.imm = (((first >> 4) & 0x1F) << 17) | ((first & 1) << 16) | second;
 }
 
 void avr::decode_IO_Rr(uint32_t opcode, avr::DecodedInstruction &out) {
@@ -85,23 +82,78 @@ void avr::decode_Rd_Rr_pair(uint32_t opcode, DecodedInstruction &out) {
   out.Rr = (opcode & 0x0F) * 2;        // Rr = младшие 4 бита номера пары * 2
 }
 
-const avr::InstructionDesc *avr::find_instruction_desc(uint16_t opcode) {
-  for (std::size_t i = 0; i < avre_plus_instruction_table_size; ++i) {
-    const auto &desc = avre_plus_instruction_table[i];
+void avr::decode_Rd_bit(uint32_t opcode, avr::DecodedInstruction &out) {
+  out.Rd = (opcode >> 4) & 0x1F;
+  out.bit = opcode & 0x07;
+}
 
-    if ((opcode & desc.mask) == desc.pattern) {
-      return &desc;
-    }
+void avr::decode_Rd_k16(uint32_t opcode, avr::DecodedInstruction &out) {
+  out.Rd = (opcode >> 4) & 0x1F;
+  out.imm = opcode >> 16; // адрес данных во втором слове
+}
+
+void avr::decode_ld_st_ptr(uint32_t opcode, avr::DecodedInstruction &out) {
+  out.Rd = (opcode >> 4) & 0x1F; // для ST это Rr, но поле то же
+  out.imm = 0;
+  switch (opcode & 0x0F) {
+  case 0x1:
+    out.ptr = 30;
+    out.mode = 1;
+    break; // Z+
+  case 0x2:
+    out.ptr = 30;
+    out.mode = 2;
+    break; // -Z
+  case 0x9:
+    out.ptr = 28;
+    out.mode = 1;
+    break; // Y+
+  case 0xA:
+    out.ptr = 28;
+    out.mode = 2;
+    break; // -Y
+  case 0xC:
+    out.ptr = 26;
+    out.mode = 0;
+    break; // X
+  case 0xD:
+    out.ptr = 26;
+    out.mode = 1;
+    break; // X+
+  default:
+    out.ptr = 26;
+    out.mode = 2;
+    break; // -X (0xE)
   }
-  return nullptr;
+}
+
+void avr::decode_ldd_std(uint32_t opcode, avr::DecodedInstruction &out) {
+  // 10q0 qq0d dddd yqqq: y=1 -> Y, y=0 -> Z; q = смещение 0..63
+  out.Rd = (opcode >> 4) & 0x1F;
+  out.ptr = (opcode & 0x08) ? 28 : 30;
+  out.mode = 0;
+  out.imm = ((opcode >> 8) & 0x20) | ((opcode >> 7) & 0x18) | (opcode & 0x07);
+}
+
+void avr::decode_lpm_rd_z(uint32_t opcode, avr::DecodedInstruction &out) {
+  out.Rd = (opcode >> 4) & 0x1F;
+  out.mode = (opcode & 1) ? 1 : 0; // 9005: Z+, 9004: Z
+}
+
+void avr::decode_Rd16_Rr16(uint32_t opcode, avr::DecodedInstruction &out) {
+  out.Rd = 16 + ((opcode >> 4) & 0x0F);
+  out.Rr = 16 + (opcode & 0x0F);
+}
+
+void avr::decode_Rd16_Rr16_3bit(uint32_t opcode, avr::DecodedInstruction &out) {
+  out.Rd = 16 + ((opcode >> 4) & 0x07);
+  out.Rr = 16 + (opcode & 0x07);
+}
+
+void avr::decode_sreg_bit(uint32_t opcode, avr::DecodedInstruction &out) {
+  out.sreg_bit = (opcode >> 4) & 0x07;
 }
 
 uint8_t avr::get_next_instruction_words(AVRExecutionContext &ctx) {
-  uint32_t next_pc = ctx.pc() + 1;
-  uint16_t opcode = ctx.fetch_program_word(next_pc);
-  const InstructionDesc *desc = find_instruction_desc(opcode);
-
-  if (!desc)
-    return 1;
-  return desc->length;
+  return ctx.cpu().instruction_length_at(ctx.pc() + 1);
 }

@@ -1,10 +1,11 @@
 #pragma once
 
+#include <algorithm>
+#include <cstdio>
 #include <map>
 #include <stdexcept>
-
-// временно для отладки
-#include <cstring>
+#include <string>
+#include <vector>
 
 #include "../interfaces/Interfaces.h"
 
@@ -42,27 +43,45 @@ public:
 
     devices_[start] = MappedInfo{dev, start, end};
 
-    // Если устройство поддерживает tick — добавляем в отдельный список
+    // Если устройство поддерживает tick — оно получает время от шины
     if (auto *t = dynamic_cast<ITickable *>(dev)) {
-      tickables_.push_back(t);
+      add_tickable(t);
     }
-    // отладка
-    fprintf(stderr, "[MemoryBus] Mapped 0x%04X-0x%04X to device at %p\n", start,
-            end, dev);
+  }
+
+  /**
+   * @brief Устройство, получающее время от шины, но не отображённое в память
+   * целиком (например, таймер, у которого в карте лежат отдельные регистры).
+   * Повторная регистрация одного и того же устройства игнорируется.
+   */
+  void add_tickable(ITickable *t) {
+    if (std::find(tickables_.begin(), tickables_.end(), t) == tickables_.end())
+      tickables_.push_back(t);
+  }
+
+  /**
+   * @brief Устройство «по умолчанию» для адресов диапазона [start, end],
+   * на которые ничего не отображено (регистры, которых ещё нет в модели).
+   * Устройство получает смещение от start. Вне диапазона обращение к
+   * неотображённому адресу по-прежнему считается ошибкой.
+   */
+  void set_fallback(uint32_t start, uint32_t end, IMemoryMapped *dev) {
+    if (start > end || end - start + 1 != dev->size())
+      throw std::logic_error("MemoryBus::set_fallback: size mismatch");
+    fallback_ = MappedInfo{dev, start, end};
+    has_fallback_ = true;
   }
 
   // ===== IBus =====
 
   uint8_t read(uint32_t addr) const override {
-    const auto &info = find_device(addr);
-    uint32_t offset = addr - info.start;
-    return info.device->read(offset);
+    const MappedInfo &info = find_device(addr);
+    return info.device->read(addr - info.start);
   }
 
   void write(uint32_t addr, uint8_t value) override {
-    auto &info = find_device(addr);
-    uint32_t offset = addr - info.start;
-    info.device->write(offset, value);
+    const MappedInfo &info = find_device(addr);
+    info.device->write(addr - info.start, value);
   }
 
   void tick(uint64_t cycles) override {
@@ -73,114 +92,32 @@ public:
 
 private:
   struct MappedInfo {
-    IMemoryMapped *device; // non-owning
-    uint32_t start;
-    uint32_t end;
+    IMemoryMapped *device = nullptr; // non-owning
+    uint32_t start = 0;
+    uint32_t end = 0;
   };
 
   // ключ = start адрес диапазона
   std::map<uint32_t, MappedInfo> devices_;
+  MappedInfo fallback_;
+  bool has_fallback_ = false;
 
   // отдельный список для tickable устройств
   std::vector<ITickable *> tickables_;
-#if 0
-  /**
-   * Найти устройство по адресу
-   */
-  MappedInfo& find_device(uint32_t addr) {
-    auto it = devices_.upper_bound(addr);
-    if (it == devices_.begin()) {
-      // throw std::out_of_range("MemoryBus: no device at address");
-      // временно для отладки
-      throw std::out_of_range("MemoryBus: no device at address 0x" +
-                              std::to_string(addr));
-    }
-
-    --it;
-
-    if (addr > it->second.end) {
-      // throw std::out_of_range("MemoryBus: no device at address");
-      // временно для отладки
-      throw std::out_of_range("MemoryBus: no device at address 0x" +
-                              std::to_string(addr));
-    }
-
-    return it->second;
-  }
-
-  const MappedInfo& find_device(uint32_t addr) const {
-    auto it = devices_.upper_bound(addr);
-    if (it == devices_.begin()) {
-      // throw std::out_of_range("MemoryBus: no device at address");
-      // временно для отладки
-      throw std::out_of_range("MemoryBus: no device at address 0x" +
-                              std::to_string(addr));
-    }
-
-    --it;
-
-    if (addr > it->second.end) {
-      // throw std::out_of_range("MemoryBus: no device at address");
-      // временно для отладки
-      throw std::out_of_range("MemoryBus: no device at address 0x" +
-                              std::to_string(addr));
-    }
-
-    return it->second;
-  }
-#endif
-
-  MappedInfo &find_device(uint32_t addr) {
-    auto it = devices_.upper_bound(addr);
-    if (it == devices_.begin()) {
-      fprintf(stderr,
-              "[MemoryBus] No device at 0x%04X (empty map or below first)\n",
-              addr);
-      throw std::out_of_range("MemoryBus: no device at address 0x" +
-                              std::to_string(addr));
-    }
-    --it;
-    if (addr > it->second.end) {
-      fprintf(stderr,
-              "[MemoryBus] No device at 0x%04X. Closest mapping: "
-              "[0x%04X-0x%04X] -> %p\n",
-              addr, it->first, it->second.end, it->second.device);
-      // Выведем всю карту для анализа
-      fprintf(stderr, "Full map:\n");
-      for (const auto &[start, info] : devices_) {
-        fprintf(stderr, "  [0x%04X-0x%04X] -> %p\n", start, info.end,
-                info.device);
-      }
-      throw std::out_of_range("MemoryBus: no device at address 0x" +
-                              std::to_string(addr));
-    }
-    return it->second;
-  }
 
   const MappedInfo &find_device(uint32_t addr) const {
     auto it = devices_.upper_bound(addr);
-    if (it == devices_.begin()) {
-      fprintf(stderr,
-              "[MemoryBus] No device at 0x%04X (empty map or below first)\n",
-              addr);
-      throw std::out_of_range("MemoryBus: no device at address 0x" +
-                              std::to_string(addr));
+    if (it != devices_.begin()) {
+      --it;
+      if (addr <= it->second.end)
+        return it->second;
     }
-    --it;
-    if (addr > it->second.end) {
-      fprintf(stderr,
-              "[MemoryBus] No device at 0x%04X. Closest mapping: "
-              "[0x%04X-0x%04X] -> %p\n",
-              addr, it->first, it->second.end, it->second.device);
-      // Выведем всю карту для анализа
-      fprintf(stderr, "Full map:\n");
-      for (const auto &[start, info] : devices_) {
-        fprintf(stderr, "  [0x%04X-0x%04X] -> %p\n", start, info.end,
-                info.device);
-      }
-      throw std::out_of_range("MemoryBus: no device at address 0x" +
-                              std::to_string(addr));
-    }
-    return it->second;
+    if (has_fallback_ && addr >= fallback_.start && addr <= fallback_.end)
+      return fallback_;
+
+    char buf[48];
+    std::snprintf(buf, sizeof buf, "0x%04X", static_cast<unsigned>(addr));
+    throw std::out_of_range(std::string("MemoryBus: no device at address ") +
+                            buf);
   }
 };

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.20)
 project(mc_emu LANGUAGES CXX)
 
 option(MCU_BUILD_TESTS "Build C++ tests" ON)

@@ -2,88 +2,187 @@
 
 #include "../avr/ATmega328P_Constants.h"
 
+namespace {
+// Индекс бита флага → вектор прерывания
+constexpr uint8_t kFlagBits[3] = {1u << 0, 1u << 1, 1u << 2};
+constexpr uint16_t kVectors[3] = {atmega328p::interrupts::TIMER0_OVF,
+                                  atmega328p::interrupts::TIMER0_COMPA,
+                                  atmega328p::interrupts::TIMER0_COMPB};
+} // namespace
+
 Timer0::Timer0() {
-  TCCR0B.on_write([this](uint8_t v) {
-    TCCR0B.set(v & 0x07);
-    prescaler_accum_ = 0;
+  // WGM01:00 и COM0xx; биты 3:2 зарезервированы
+  TCCR0A.on_write([this](uint8_t v) {
+    TCCR0A.set(v & 0xF3);
+    if (!ocr_double_buffered())
+      load_ocr_from_buffer();
   });
 
-  TIMSK0.on_write([this](uint8_t v) { TIMSK0.set(v & 0x01); });
+  // WGM02 и CS02:0; FOC0A/FOC0B (строб) читаются как 0 и не моделируются
+  TCCR0B.on_write([this](uint8_t v) {
+    uint8_t old_cs = TCCR0B.value() & 0x07;
+    TCCR0B.set(v & 0x0F);
+    if ((v & 0x07) != old_cs)
+      prescaler_accum_ = 0;
+    if (!ocr_double_buffered())
+      load_ocr_from_buffer();
+  });
 
+  TCNT0.on_write([this](uint8_t v) {
+    TCNT0.set(v);
+    skip_compare_ = true;
+  });
+
+  OCR0A.on_write([this](uint8_t v) {
+    OCR0A.set(v);
+    if (!ocr_double_buffered())
+      ocr_a_active_ = v;
+  });
+  OCR0B.on_write([this](uint8_t v) {
+    OCR0B.set(v);
+    if (!ocr_double_buffered())
+      ocr_b_active_ = v;
+  });
+
+  TIMSK0.on_write([this](uint8_t v) {
+    TIMSK0.set(v & 0x07);
+    update_irq();
+  });
+
+  // Флаги сбрасываются записью единицы
   TIFR0.on_write([this](uint8_t v) {
-    uint8_t cur = TIFR0.value();
-
-    if (v & 0x01)
-      cur &= ~0x01;
-
-    TIFR0.set(cur);
+    TIFR0.set(TIFR0.value() & ~(v & 0x07));
+    update_irq();
   });
 
   reset();
 }
 
-void Timer0::tick(uint64_t cycles) {
-  uint8_t cs = TCCR0B.value() & 0x07;
+void Timer0::reset() {
+  TCCR0A.set(0);
+  TCCR0B.set(0);
+  TCNT0.set(0);
+  OCR0A.set(0);
+  OCR0B.set(0);
+  TIMSK0.set(0);
+  TIFR0.set(0);
 
-  uint16_t divisor = prescaler_divisors[cs];
+  ocr_a_active_ = 0;
+  ocr_b_active_ = 0;
+  prescaler_accum_ = 0;
+  counting_up_ = true;
+  skip_compare_ = false;
+  update_irq();
+}
+
+void Timer0::attach_interrupt_sink(IInterruptSink *sink) {
+  interrupt_sink_ = sink;
+  if (!sink)
+    return;
+  // Аппаратура сбрасывает флаг прерывания при входе в вектор
+  for (int i = 0; i < 3; ++i) {
+    sink->set_interrupt_ack_handler(kVectors[i], [this, i] {
+      TIFR0.set(TIFR0.value() & static_cast<uint8_t>(~kFlagBits[i]));
+    });
+  }
+}
+
+uint8_t Timer0::wgm() const {
+  return static_cast<uint8_t>(((TCCR0B.value() >> 3) & 1) << 2 |
+                              (TCCR0A.value() & 3));
+}
+
+// PWM-режимы: 1 (PC, TOP=FF), 3 (Fast, TOP=FF), 5 (PC, TOP=OCRA),
+// 7 (Fast, TOP=OCRA)
+bool Timer0::ocr_double_buffered() const {
+  uint8_t m = wgm();
+  return m == 1 || m == 3 || m == 5 || m == 7;
+}
+
+void Timer0::load_ocr_from_buffer() {
+  ocr_a_active_ = OCR0A.value();
+  ocr_b_active_ = OCR0B.value();
+}
+
+void Timer0::tick(uint64_t cycles) {
+  uint16_t divisor = prescaler_divisors[TCCR0B.value() & 0x07];
   if (divisor == 0)
     return;
 
   prescaler_accum_ += cycles;
   while (prescaler_accum_ >= divisor) {
     prescaler_accum_ -= divisor;
+    clock_timer();
+  }
+  update_irq();
+}
 
-    uint8_t val = TCNT0.value() + 1;
-    TCNT0.set(val);
+// Один такт таймера (после предделителя).
+void Timer0::clock_timer() {
+  const uint8_t mode = wgm();
+  const uint8_t cnt = TCNT0.value();
+  uint8_t flags = TIFR0.value();
 
-    if (val == 0) {
-      TIFR0.set(TIFR0.value() | 0x01);
+  // Compare match: флаг выставляется на такте ПОСЛЕ совпадения TCNT0 с OCR0x
+  // (datasheet, "Setting of OCF0x"); запись в TCNT0 блокирует сравнение.
+  if (!skip_compare_) {
+    if (cnt == ocr_a_active_)
+      flags |= OCF0A;
+    if (cnt == ocr_b_active_)
+      flags |= OCF0B;
+  }
+  skip_compare_ = false;
 
-      check_overflow();
+  const bool top_is_ocra = (mode == 2 || mode == 5 || mode == 7);
+  const uint8_t top = top_is_ocra ? ocr_a_active_ : 0xFF;
+  uint8_t next;
+
+  if (mode == 1 || mode == 5) {
+    // Phase Correct PWM: вверх до TOP, затем вниз до BOTTOM
+    if (counting_up_) {
+      next = static_cast<uint8_t>(cnt + 1);
+      if (next >= top) {
+        next = top;
+        counting_up_ = false;
+        load_ocr_from_buffer(); // OCR обновляется на TOP
+      }
+    } else {
+      next = cnt == 0 ? 0 : static_cast<uint8_t>(cnt - 1);
+      if (next == 0) {
+        counting_up_ = true;
+        flags |= TOV0; // TOV0 на BOTTOM
+      }
     }
-  }
-}
+  } else {
+    // Normal / CTC / Fast PWM: счёт вверх
+    next = (top_is_ocra && cnt == top) ? 0 : static_cast<uint8_t>(cnt + 1);
 
-void Timer0::check_overflow() {
-  if ((TIMSK0.value() & 0x01) && (TIFR0.value() & 0x01)) {
-    if (interrupt_sink_) {
-      interrupt_sink_->raise_interrupt(atmega328p::interrupts::TIMER0_OVF);
+    if (mode == 7) {
+      if (next == top)
+        flags |= TOV0; // Fast PWM с TOP=OCR0A: TOV0 на TOP
+    } else if (cnt == 0xFF && next == 0) {
+      flags |= TOV0; // TOV0 на MAX
     }
+
+    if (ocr_double_buffered() && next == 0)
+      load_ocr_from_buffer(); // Fast PWM: обновление OCR на BOTTOM
   }
+
+  TCNT0.set(next);
+  TIFR0.set(flags);
 }
 
-uint8_t Timer0::read(uint32_t offset) const {
-  switch (offset) {
-  case 0x00:
-    return TCCR0B.read(0);
-  case 0x01:
-    return TCNT0.read(0);
-  case 0x02:
-    return TIMSK0.read(0);
-  case 0x03:
-    return TIFR0.read(0);
-  default:
-    throw std::out_of_range("Timer0::read invalid offset");
+// Линия прерывания активна, пока выставлен флаг И разрешена маска (уровень,
+// а не импульс): если TOIE0 включили при уже взведённом TOV0 — прерывание
+// сработает; если флаг сбросили или маску сняли — запрос снимается.
+void Timer0::update_irq() {
+  if (!interrupt_sink_)
+    return;
+  const uint8_t active = TIFR0.value() & TIMSK0.value();
+  for (int i = 0; i < 3; ++i) {
+    if (active & kFlagBits[i])
+      interrupt_sink_->raise_interrupt(kVectors[i]);
+    else
+      interrupt_sink_->clear_interrupt(kVectors[i]);
   }
 }
-
-void Timer0::write(uint32_t offset, uint8_t value) {
-  switch (offset) {
-  case 0x00:
-    TCCR0B.write(0, value);
-    break;
-  case 0x01:
-    TCNT0.write(0, value);
-    break;
-  case 0x02:
-    TIMSK0.write(0, value);
-    break;
-  case 0x03:
-    TIFR0.write(0, value);
-    break;
-  default:
-    throw std::out_of_range("Timer0::write invalid offset");
-  }
-}
-
-uint32_t Timer0::size() const { return 4; }

@@ -1,4 +1,3 @@
-# simulation_scene.py
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QBrush
 from PySide6.QtWidgets import QGraphicsScene

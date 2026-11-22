@@ -1,12 +1,14 @@
 #pragma once
 
+#include <algorithm>
 #include <cstring>
 #include <stdexcept>
+#include <vector>
 
 #include "../interfaces/Interfaces.h"
 
 // Статическое ОЗУ (SRAM)
-class SRAMDevice : public IMemoryMapped {
+class SRAMDevice : public IMemoryMapped, public IResettable {
 public:
   explicit SRAMDevice(size_t size_bytes)
       : data_(size_bytes, 0x00), size_(size_bytes) {}
@@ -24,6 +26,9 @@ public:
   }
 
   uint32_t size() const override { return size_; }
+
+  // Power-on reset: содержимое SRAM обнуляется (детерминированное состояние).
+  void reset() override { std::fill(data_.begin(), data_.end(), 0); }
 
 private:
   std::vector<uint8_t> data_;

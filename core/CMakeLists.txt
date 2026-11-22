@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.20)
 project(mcu_emulator_backend LANGUAGES CXX)
 
-# Требуем C++17 (auto, make_unique, и т.д.)
-set(CMAKE_CXX_STANDARD 17)
+# C++20: в коде уже используются designated initializers (таблица инструкций).
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(MCU_BUILD_PYTHON "Build the emulator_backend Python module (needs pybind11)" ON)
 option(MCU_SANITIZE "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)

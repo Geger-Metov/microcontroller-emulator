@@ -13,6 +13,7 @@ class AVR_GPIO;
 class Timer0;
 class StackPointerDevice;
 class MMIORegister;
+class UnimplementedIODevice;
 
 struct MCUContext {
   // ===== buses =====
@@ -35,6 +36,9 @@ struct MCUContext {
 
   //
   std::unique_ptr<StackPointerDevice> sp_device;
+
+  // регистры I/O, которых ещё нет в модели (RAZ/WI)
+  std::unique_ptr<UnimplementedIODevice> io_fallback;
 
   // временная заглушка
   std::unique_ptr<MMIORegister> eearl;
