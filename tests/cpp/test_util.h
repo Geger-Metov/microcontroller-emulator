@@ -5,8 +5,8 @@
 #include <memory>
 #include <vector>
 
-#include "../../core/facade//EmulatorFacade.h"
-#include "../../core/mcu/avr/ATmega328p.h"
+#include "ATmega328p.h"
+#include "EmulatorFacade.h"
 
 namespace testutil {
 

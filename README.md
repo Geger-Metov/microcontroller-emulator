@@ -21,7 +21,6 @@ Python-модуль `emulator_backend` (pybind11), который импорти
 # 1. Окружение GUI (PySide6 и др.) и pybind11 для сборки модуля — один раз
 cd gui
 uv sync
-uv add --dev pybind11        # нужен только для сборки, не для запуска GUI
 cd ..
 
 # 2. Сборка C++-ядра и Python-модуля (оптимизированная, -O2)

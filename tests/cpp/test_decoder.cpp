@@ -4,9 +4,9 @@
 #include <memory>
 #include <vector>
 
-#include "../../core/decoder/avr_decode_helpers.h"
-#include "../../core/facade/EmulatorFacade.h"
-#include "../../core/mcu/avr/ATmega328p.h"
+#include "ATmega328p.h"
+#include "EmulatorFacade.h"
+#include "avr_decode_helpers.h"
 #include "test_framework.h"
 
 namespace {

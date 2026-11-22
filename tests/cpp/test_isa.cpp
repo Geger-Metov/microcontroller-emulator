@@ -1,8 +1,8 @@
 // Направленные тесты набора инструкций: адресация LD/ST, LPM, стек, биты SREG,
 // ветвления, пропуски, SLEEP, такты, таблица декодера.
-#include "../../core/cpu/AVRExecutionContext.h" // SREGFlag
-#include "../../core/cpu/avr_instructions.h"
-#include "../../core/decoder//avr_decoder.h"
+#include "AVRExecutionContext.h" // SREGFlag
+#include "avr_decoder.h"
+#include "avr_instructions.h"
 #include "test_framework.h"
 #include "test_util.h"
 

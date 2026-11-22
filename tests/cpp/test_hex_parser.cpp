@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-#include "../../core/hex_parser/hex_parser.h"
-#include "../../core/loader/avr_loader.h"
+#include "avr_loader.h"
+#include "hex_parser.h"
 #include "test_framework.h"
 
 namespace {
