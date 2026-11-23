@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 
-#include "../interfaces/Interfaces.h"
+#include "Interfaces.h"
 
 /**
  * Шина памяти:

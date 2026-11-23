@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-#include "../cpu/avr_instructions.h"
+#include "avr_instructions.h"
 
 namespace avr {
 void decode_none(uint32_t, avr::DecodedInstruction &);

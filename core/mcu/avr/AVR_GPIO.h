@@ -2,9 +2,9 @@
 
 #include <array>
 
-#include "../../interfaces/Interfaces.h"
-#include "../peripherals/MMIORegister.h"
-#include "../peripherals/Wire.h"
+#include "Interfaces.h"
+#include "MMIORegister.h"
+#include "Wire.h"
 
 class AVR_GPIO : public IDevice {
 public:

@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "../interfaces/Interfaces.h"
+#include "Interfaces.h"
 
 // Статическое ОЗУ (SRAM)
 class SRAMDevice : public IMemoryMapped, public IResettable {

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "../../interfaces/Interfaces.h"
+#include "Interfaces.h"
 
 // Forward declaration
 class MCUContext;

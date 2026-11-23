@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "ATmega328p.h"
-#include "EmulatorFacade.h"
 
 namespace testutil {
 

@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "ATmega328p.h"
-#include "EmulatorFacade.h"
 #include "avr_decode_helpers.h"
 #include "test_framework.h"
 

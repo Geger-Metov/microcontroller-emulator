@@ -4,8 +4,8 @@
 #pragma once
 
 #include <cstdio>
+#include <exception>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <vector>
 

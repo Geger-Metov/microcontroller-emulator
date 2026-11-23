@@ -1,9 +1,8 @@
-#include "AVR_CPU.h"
-
 #include <cstdio>
 #include <stdexcept>
 
 #include "AVRExecutionContext.h"
+#include "AVR_CPU.h"
 #include "avr_instructions.h"
 
 AVR_CPU::AVR_CPU(std::unique_ptr<IDecoder> decoder)

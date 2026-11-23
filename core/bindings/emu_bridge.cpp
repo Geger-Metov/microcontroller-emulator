@@ -1,11 +1,9 @@
+#include <fstream>
 #include <pybind11/functional.h> // если потребуются колбэки
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h> // для std::vector ↔ list
 
-#include <fstream>
-
 #include "ATmega328p.h"
-#include "EmulatorFacade.h"
 
 namespace py = pybind11;
 

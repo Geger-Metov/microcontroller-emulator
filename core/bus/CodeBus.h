@@ -3,7 +3,7 @@
 #include <map>
 #include <stdexcept>
 
-#include "../interfaces/Interfaces.h"
+#include "Interfaces.h"
 
 class CodeBus : public ICodeBus {
 public:

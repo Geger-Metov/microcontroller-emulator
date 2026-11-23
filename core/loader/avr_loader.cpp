@@ -1,7 +1,7 @@
-#include "avr_loader.h"
-
 #include <cstring>
 #include <stdexcept>
+
+#include "avr_loader.h"
 
 AVRProgramLoader::AVRProgramLoader(const AVRMemoryLayout &layout)
     : layout_(layout) {}

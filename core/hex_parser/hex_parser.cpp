@@ -1,6 +1,6 @@
-#include "hex_parser.h"
-
 #include <stdexcept>
+
+#include "hex_parser.h"
 
 HexImage HexParser::parse(std::istream &input) {
   HexImage image;

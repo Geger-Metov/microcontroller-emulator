@@ -3,7 +3,7 @@
 #include <array>
 #include <stdexcept>
 
-#include "../../interfaces/Interfaces.h"
+#include "Interfaces.h"
 
 class RegisterFileDevice : public IMemoryMapped, public IRegisterFile {
 public:

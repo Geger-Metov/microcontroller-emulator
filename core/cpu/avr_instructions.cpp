@@ -1,7 +1,6 @@
 #include "avr_instructions.h"
-
-#include "../decoder/avr_decode_helpers.h"
 #include "AVRExecutionContext.h"
+#include "avr_decode_helpers.h"
 
 // Формулы флагов взяты из AVR Instruction Set Manual (DS40002198).
 // Тесты сверяют их с независимым оракулом на широкой арифметике.

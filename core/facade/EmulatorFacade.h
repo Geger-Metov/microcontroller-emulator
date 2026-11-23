@@ -3,7 +3,7 @@
 #include <atomic>
 #include <memory>
 
-#include "../interfaces/Interfaces.h"
+#include "Interfaces.h"
 
 class FlashDevice;
 
