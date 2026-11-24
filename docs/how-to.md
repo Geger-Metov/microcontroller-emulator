@@ -52,6 +52,25 @@ cmake --preset release && cmake --build --preset release && ctest --preset relea
   адреса регистров.
 * Прошивки для тестов — `tests/data/hex/` (путь в коде — макрос `MCU_HEX_DIR`).
 
+## Тесты GUI
+
+```bash
+cd gui
+uv add --dev pytest pytest-qt          # один раз
+uv run pytest -v                       # тесты лежат в ../tests/python; offscreen выставляется в conftest.py
+```
+
+Три уровня (файлы в `tests/python/`):
+
+* `test_pin_logic.py`, `test_controller.py` — чистая логика и контроллер на `FakeEmulator`; не требуют ни Qt, ни ядра.
+* `test_qt_gui.py` — виджеты через `qtbot` без экрана (кнопки, остановка по ошибке, светодиод, подписи пинов).
+  Пропускается, если нет PySide6/pytest-qt.
+* `test_backend_integration.py` — настоящее ядро: загрузка `tests/data/hex/*.hex`, состояние портов, ошибки.
+  Пропускается, если не собран `emulator_backend`.
+
+Правило: логику (что гореть, какой цвет, какие адреса) держим в `pin_logic.py`/`controller.py` и тестируем без Qt;
+в виджетах остаётся только отрисовка.
+
 ## Посмотреть, что делает прошивка
 
 Дизассемблера в проекте нет (см. `status.md`). Пока: `avr-objdump -d firmware.elf` (если есть исходники),

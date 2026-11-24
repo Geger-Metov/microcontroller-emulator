@@ -42,8 +42,31 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
       - name: Lint (ruff)
-        run: uv run ruff check .
+        run: uv run ruff check --config pyproject.toml . ../tests/python
       - name: Format check (ruff)
-        run: uv run ruff format --check .
+        run: uv run ruff format --check --config pyproject.toml . ../tests/python
       - name: Type check (mypy)
         run: uv run mypy src
+
+  # Тесты GUI: чистая логика, виджеты (pytest-qt, offscreen) и интеграция с настоящим ядром.
+  gui-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Install dependencies
+        run: uv sync --locked
+        working-directory: gui
+      - name: System libraries for Qt
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1
+      - name: Build emulator_backend
+        run: |
+          PY="$PWD/gui/.venv/bin/python"
+          cmake --preset release-python -Dpybind11_DIR="$("$PY" -m pybind11 --cmakedir)" -DPython_EXECUTABLE="$PY"
+          cmake --build --preset release-python --target emulator_backend
+      - name: Test
+        run: uv run pytest -v
+        working-directory: gui

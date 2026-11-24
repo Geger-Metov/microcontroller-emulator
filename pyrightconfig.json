@@ -1,0 +1,21 @@
+{
+  "include": ["gui/src", "tests/python"],
+  "exclude": ["**/__pycache__", "gui/.venv", "build"],
+
+  "venvPath": "gui",
+  "venv": ".venv",
+  "stubPath": "gui/stubs",
+
+  "typeCheckingMode": "standard",
+
+  "executionEnvironments": [
+    {
+      "root": "gui/src",
+      "extraPaths": ["gui/stubs"],
+    },
+    {
+      "root": "tests/python",
+      "extraPaths": ["gui/src", "gui/stubs"],
+    },
+  ],
+}
