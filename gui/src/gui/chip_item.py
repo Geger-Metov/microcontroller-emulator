@@ -40,6 +40,7 @@ class ChipItem(QGraphicsRectItem):
 
         # Порт B
         self.pin_ellipses_B = {}
+        self.pin_labels_B = {}
         self.pin_connectors_B = {}
         for i in range(8):
             y = 20 + i * 25
@@ -61,10 +62,12 @@ class ChipItem(QGraphicsRectItem):
             conn.setPos(10, y)
 
             self.pin_ellipses_B[i] = ellipse
+            self.pin_labels_B[i] = text
             self.pin_connectors_B[i] = conn
 
         # Порт D
         self.pin_ellipses_D = {}
+        self.pin_labels_D = {}
         self.pin_connectors_D = {}
         for i in range(8):
             y = 20 + i * 25
@@ -86,6 +89,7 @@ class ChipItem(QGraphicsRectItem):
             conn.setPos(290, y)
 
             self.pin_ellipses_D[i] = ellipse
+            self.pin_labels_D[i] = text
             self.pin_connectors_D[i] = conn
 
     def update_pin_colors(self, ddrB, portB, ddrD, portD):

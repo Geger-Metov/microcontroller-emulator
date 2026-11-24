@@ -151,13 +151,11 @@ def test_chip_pin_indicator_colors(view, fake_emu):
 
 
 def test_pin_labels_name_the_right_port(view):
-    from PySide6.QtWidgets import QGraphicsTextItem
-
     view.show_chip()
-    labels = {
-        item.toPlainText()
-        for item in view.chip_scene.chip_item.childItems()
-        if isinstance(item, QGraphicsTextItem)
-    }
-    assert {f"PB{i}" for i in range(8)} <= labels
-    assert {f"PD{i}" for i in range(8)} <= labels
+    chip = view.chip_scene.chip_item
+    assert [chip.pin_labels_B[i].toPlainText() for i in range(8)] == [
+        f"PB{i}" for i in range(8)
+    ]
+    assert [chip.pin_labels_D[i].toPlainText() for i in range(8)] == [
+        f"PD{i}" for i in range(8)
+    ]
