@@ -42,9 +42,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
       - name: Lint (ruff)
-        run: uv run ruff check --config pyproject.toml . ../tests/python
+        run: uv run ruff check . ../tests/python
       - name: Format check (ruff)
-        run: uv run ruff format --check --config pyproject.toml . ../tests/python
+        run: uv run ruff format --check . ../tests/python
       - name: Type check (mypy)
         run: uv run mypy src
 

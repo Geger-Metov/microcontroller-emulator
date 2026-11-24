@@ -8,11 +8,12 @@ import pytest
 pytest.importorskip("PySide6", reason="PySide6 не установлен")
 pytest.importorskip("pytestqt", reason="pytest-qt не установлен")
 
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
+
 from gui.controller import DDRB, DDRD, PORTB, PORTD
 from gui.sim_view import SimulatorView
 from gui.wire_item import WireItem
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
 
 RED = QColor(Qt.GlobalColor.red)
 GRAY = QColor(Qt.GlobalColor.gray)

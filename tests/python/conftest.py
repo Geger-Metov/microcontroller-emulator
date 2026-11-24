@@ -10,6 +10,7 @@ from pathlib import Path
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
+
 from gui.controller import SimController
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

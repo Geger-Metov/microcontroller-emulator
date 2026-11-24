@@ -2,12 +2,11 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.0
     hooks:
-      # Конфиг один — gui/pyproject.toml — и для gui/, и для Python-тестов в tests/python.
+      # Конфиг один — ruff.toml в корне — и для gui/, и для Python-тестов в tests/python.
       - id: ruff-check
-        args: [--fix, --config=gui/pyproject.toml]
+        args: [--fix]
         files: ^(gui|tests/python)/
       - id: ruff-format
-        args: [--config=gui/pyproject.toml]
         files: ^(gui|tests/python)/
 
   - repo: local

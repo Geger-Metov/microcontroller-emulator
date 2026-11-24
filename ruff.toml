@@ -1,0 +1,11 @@
+# Единый конфиг ruff для всего репозитория (gui/ и tests/python/). Его находят и
+# редактор (Zed), и pre-commit, и CI — отдельные --config не нужны.
+
+# Явно: у ruff.toml (в отличие от pyproject.toml) версия Python не выводится из
+# requires-python, а в коде используется синтаксис 3.12+ (generic-функции).
+target-version = "py315"
+
+[lint.isort]
+# `gui` лежит в gui/src. Без явного указания сортировка импортов зависит от того,
+# откуда запущен ruff, и редактор с CI расходятся.
+known-first-party = ["gui"]
