@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QGraphicsView,
     QHBoxLayout,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QVBoxLayout,
@@ -86,6 +87,9 @@ class SimulatorView(QWidget):
         # Колбэк обновления GUI
         self.update_callback = None
 
+        if controller is not None:
+            controller.set_error_callback(self._on_error)
+
     def resizeEvent(self, event):
         """Автоматически подгонять масштаб сцены при изменении размера виджета."""
         super().resizeEvent(event)
@@ -96,8 +100,22 @@ class SimulatorView(QWidget):
 
     def set_controller(self, ctrl):
         self.controller = ctrl
+        if ctrl is not None:
+            ctrl.set_error_callback(self._on_error)
         if self.chip_scene:
             self.chip_scene.controller = ctrl
+
+    def _stop_run(self):
+        self.timer.stop()
+        self.btn_run.setText("Run")
+
+    def _on_error(self, message):
+        """Ошибка эмулятора: остановить автозапуск и показать причину."""
+        self._stop_run()
+        self.show_error(message)
+
+    def show_error(self, message):
+        QMessageBox.critical(self, "Ошибка эмулятора", message)
 
     def show_chip(self):
         if self.chip_scene:
@@ -129,17 +147,14 @@ class SimulatorView(QWidget):
             self.controller.load_hex(path)
 
     def _on_step(self):
-        if self.controller:
-            self.controller.step()
-            if self.update_callback:
-                self.update_callback()
+        if self.controller and self.controller.step() and self.update_callback:
+            self.update_callback()
 
     def _on_run(self):
         if not self.controller:
             return
         if self.timer.isActive():
-            self.timer.stop()
-            self.btn_run.setText("Run")
+            self._stop_run()
         else:
             self.timer.start(50)
             self.btn_run.setText("Stop")
@@ -151,7 +166,5 @@ class SimulatorView(QWidget):
                 self.update_callback()
 
     def _timer_tick(self):
-        if self.controller:
-            self.controller.step()
-            if self.update_callback:
-                self.update_callback()
+        if self.controller and self.controller.step() and self.update_callback:
+            self.update_callback()

@@ -8,6 +8,16 @@ from PySide6.QtWidgets import (
 )
 
 from gui.interactive_items import ConnectorItem
+from gui.pin_logic import bit, pin_kind
+
+# Цвет индикатора пина на корпусе: выход=1 красный, выход=0 зелёный,
+# вход с подтяжкой жёлтый, вход серый.
+PIN_COLORS = {
+    "output_high": QColor(Qt.GlobalColor.red),
+    "output_low": QColor(0, 128, 0),
+    "input_pullup": QColor(Qt.GlobalColor.yellow),
+    "input": QColor(Qt.GlobalColor.gray),
+}
 
 
 class ChipItem(QGraphicsRectItem):
@@ -62,7 +72,7 @@ class ChipItem(QGraphicsRectItem):
             ellipse.setPen(QPen(Qt.GlobalColor.black, 1))
             ellipse.setBrush(QBrush(Qt.GlobalColor.gray))
 
-            text = QGraphicsTextItem(f"PB{i}", self)
+            text = QGraphicsTextItem(f"PD{i}", self)
             text.setPos(260, y - 2)  # или чуть правее, например -20
             text.setDefaultTextColor(Qt.GlobalColor.red)
             text.setZValue(100)  # высокий Z
@@ -79,30 +89,10 @@ class ChipItem(QGraphicsRectItem):
             self.pin_connectors_D[i] = conn
 
     def update_pin_colors(self, ddrB, portB, ddrD, portD):
-        for i in range(8):
-            ddr_bit = (ddrB >> i) & 1
-            port_bit = (portB >> i) & 1
-            color = (
-                Qt.GlobalColor.red
-                if (ddr_bit and port_bit)
-                else (
-                    QColor(0, 128, 0)
-                    if ddr_bit
-                    else (Qt.GlobalColor.yellow if port_bit else Qt.GlobalColor.gray)
-                )
-            )
-            self.pin_ellipses_B[i].setBrush(QBrush(color))
-
-        for i in range(8):
-            ddr_bit = (ddrD >> i) & 1
-            port_bit = (portD >> i) & 1
-            color = (
-                Qt.GlobalColor.red
-                if (ddr_bit and port_bit)
-                else (
-                    QColor(0, 128, 0)
-                    if ddr_bit
-                    else (Qt.GlobalColor.yellow if port_bit else Qt.GlobalColor.gray)
-                )
-            )
-            self.pin_ellipses_D[i].setBrush(QBrush(color))
+        for ellipses, ddr, port in (
+            (self.pin_ellipses_B, ddrB, portB),
+            (self.pin_ellipses_D, ddrD, portD),
+        ):
+            for i in range(8):
+                kind = pin_kind(bit(ddr, i), bit(port, i))
+                ellipses[i].setBrush(QBrush(PIN_COLORS[kind]))
