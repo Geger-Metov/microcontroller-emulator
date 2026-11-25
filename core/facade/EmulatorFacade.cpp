@@ -1,6 +1,7 @@
-#include "EmulatorFacade.h"
-#include "BasicMemoryDevices.h"
 #include <stdexcept>
+
+#include "BasicMemoryDevices.h"
+#include "EmulatorFacade.h"
 
 EmulatorFacade::EmulatorFacade() {}
 EmulatorFacade::~EmulatorFacade() { stop(); }
@@ -95,12 +96,24 @@ void EmulatorFacade::step_instruction() {
   notify_pc_changed();
 }
 
-void EmulatorFacade::run_for_cycles(uint64_t cycle_budget) {
+uint64_t EmulatorFacade::run_for_cycles(uint64_t cycle_budget) {
   if (!cpu_)
     throw std::runtime_error("CPU not set");
-  uint64_t executed = 0;
 
-  while (executed < cycle_budget) {
+  // Порядок важен: сначала сбрасываем старый запрос, потом объявляем запуск
+  // идущим — иначе pause(), пришедший между двумя шагами, потерялся бы.
+  stop_requested_ = false;
+
+  // running_ сбрасывается и при исключении (например, Illegal instruction).
+  struct RunningGuard {
+    std::atomic<bool> &flag;
+    explicit RunningGuard(std::atomic<bool> &f) : flag(f) { flag = true; }
+    ~RunningGuard() { flag = false; }
+  } guard(running_);
+
+  uint64_t executed = 0;
+  while (executed < cycle_budget &&
+         !stop_requested_.load(std::memory_order_relaxed)) {
     cpu_->step();
     uint64_t cycles = cpu_->get_last_instruction_cycles();
     executed += cycles;
@@ -108,6 +121,7 @@ void EmulatorFacade::run_for_cycles(uint64_t cycle_budget) {
       data_bus_->tick(cycles);
   }
   notify_pc_changed();
+  return executed;
 }
 
 void EmulatorFacade::register_reset_device(IResettable *dev) {
@@ -133,9 +147,12 @@ void EmulatorFacade::reset() {
   notify_memory_changed(0, 0xFFFFFFFF);
 }
 
-void EmulatorFacade::pause() { running_ = false; }
+void EmulatorFacade::pause() {
+  if (running_)
+    stop_requested_ = true;
+}
 
-void EmulatorFacade::stop() { running_ = false; }
+void EmulatorFacade::stop() { pause(); }
 
 uint64_t EmulatorFacade::get_cycle_count() const {
   if (!cpu_)

@@ -108,10 +108,19 @@ public:
   virtual std::vector<MemoryRegion> get_memory_map() const = 0;
 
   // Управление симуляцией
-  virtual void run_for_cycles(uint64_t cycle_budget) = 0;
+  // Выполняет инструкции, пока не набрано cycle_budget тактов или не вызван
+  // pause()/stop(). Возвращает реально выполненные такты (может быть чуть
+  // больше бюджета: инструкцию нельзя прервать посередине).
+  virtual uint64_t run_for_cycles(uint64_t cycle_budget) = 0;
   virtual void step_instruction() = 0;
+
+  // Просит текущий run_for_cycles() выйти после ближайшей инструкции.
+  // Единственный метод, который безопасно вызывать из другого потока во время
+  // запуска. Запрос относится только к уже идущему запуску: новый
+  // run_for_cycles() его не видит. Вне запуска ничего не делает.
   virtual void pause() = 0;
-  virtual void stop() = 0;
+  virtual void stop() = 0; // то же, что pause() (без отдельного состояния)
+  virtual bool is_running() const = 0; // идёт ли сейчас run_for_cycles()
   virtual uint64_t get_cycle_count() const = 0;
 
   // Колбэки для GUI

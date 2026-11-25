@@ -1,6 +1,9 @@
 #pragma once
 
+#include <istream>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "Interfaces.h"
 
@@ -14,8 +17,10 @@ public:
   // Создать полностью сконфигурированный эмулятор
   static std::unique_ptr<IEmulatorFacade> create();
 
-  // ъъ
-  static void load_hex(IEmulatorFacade &facade, std::istream &hex_stream);
+  // Загрузить Intel HEX во flash. Ошибка формата/переполнения — исключение.
+  // Возвращает предупреждения (данные вне flash, EEPROM не эмулируется).
+  static std::vector<std::string> load_hex(IEmulatorFacade &facade,
+                                           std::istream &hex_stream);
 
 private:
   // Вспомогательные методы для создания устройств

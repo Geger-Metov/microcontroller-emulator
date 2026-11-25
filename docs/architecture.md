@@ -103,8 +103,27 @@ sequenceDiagram
           → EmulatorFacade::load_flash_bytes → FlashDevice
 ```
 
+Правила разбора: пробелы/CRLF по краям строки и пустые строки допустимы; записи 00–05 поддерживаются
+(`02` — сегмент×16, `04` — старшие 16 бит адреса); любая ошибка — `HexFormatError` с номером строки и
+причиной (нет `:`, нечётное число цифр, не-hex символ, длина не сходится со счётчиком, контрольная сумма).
+`avr-objcopy` кладёт flash с адреса `0x000000`, EEPROM — с `0x810000`; fuse/lock (`0x82xxxx`…) загрузчик
+пропускает и сообщает в `ProgramImage::warnings` (в Python — список, который возвращает `load_hex`).
+EEPROM пока не эмулируется — данные из HEX отбрасываются с предупреждением.
+
 Flash — массив байт, но CPU обращается к нему **словами** (`CodeBus::read_word(word_addr)`).
 Подробнее про единицы — в [glossary.md](glossary.md).
+
+## API Python-модуля (`emulator_backend`)
+
+Заглушки типов — `gui/stubs/emulator_backend.pyi`.
+
+- Запуск: `step()`, `run(cycles) -> выполненные такты`, `reset()`; `run()` **освобождает GIL**, поэтому его
+  можно вызывать из рабочего потока. `stop()` (потокобезопасно) просит идущий `run()` выйти после текущей
+  инструкции; `is_running()`. Пока `run()` идёт, остальные методы бросают `EmulatorBusyError`.
+- Состояние: `snapshot()` (pc, sp, sreg, cycles, registers одним вызовом), `read_memory_block`,
+  `read_flash`, `get_memory_map()` (регионы пространства данных).
+- Ошибки (все наследуют `EmulatorError`): `IllegalInstructionError` (с опкодом и адресом),
+  `HexFormatError`, `MemoryAccessError`, `EmulatorBusyError`.
 
 ## GUI (кратко)
 

@@ -1,9 +1,24 @@
 #include <cstdio>
 #include <stdexcept>
+#include <string>
 
+#include "../common/errors.h"
 #include "AVRExecutionContext.h"
 #include "AVR_CPU.h"
 #include "avr_instructions.h"
+
+namespace {
+// «Illegal AVR instruction 0x95D8 at word address 0x0057 (byte 0x00AE)»
+std::string illegal_message(uint32_t word_pc, uint16_t opcode) {
+  char buf[96];
+  std::snprintf(buf, sizeof buf,
+                "Illegal AVR instruction 0x%04X at word address 0x%04X "
+                "(byte 0x%05X)",
+                static_cast<unsigned>(opcode), static_cast<unsigned>(word_pc),
+                static_cast<unsigned>(word_pc * 2));
+  return buf;
+}
+} // namespace
 
 AVR_CPU::AVR_CPU(std::unique_ptr<IDecoder> decoder)
     : decoder_(std::move(decoder)) {}
@@ -64,9 +79,7 @@ void AVR_CPU::step() {
   const avr::InstructionDesc *desc = decoder_->decode(first_word, decoded);
 
   if (!desc) {
-    fprintf(stderr, "[CPU] Unknown instruction at PC=0x%X, opcode=0x%04X\n",
-            current_pc, first_word);
-    throw std::runtime_error("Illegal AVR instruction");
+    throw IllegalInstructionError(illegal_message(current_pc, first_word));
   }
 
   // 3. FETCH SECOND WORD IF NEEDED
@@ -79,7 +92,7 @@ void AVR_CPU::step() {
     desc = decoder_->decode(full_opcode, decoded);
 
     if (!desc) {
-      throw std::runtime_error("Illegal AVR 32-bit instruction");
+      throw IllegalInstructionError(illegal_message(current_pc, first_word));
     }
   }
 

@@ -33,11 +33,12 @@ public:
                      const std::vector<uint16_t> &words) override;
 
   std::vector<MemoryRegion> get_memory_map() const override;
-  void run_for_cycles(uint64_t cycle_budget) override;
+  uint64_t run_for_cycles(uint64_t cycle_budget) override;
   void step_instruction() override;
   void pause() override;
   void reset() override;
   void stop() override;
+  bool is_running() const override { return running_; }
   uint64_t get_cycle_count() const override;
   void set_on_pc_changed(PCCallback cb) override;
   void set_on_memory_changed(MemoryChangedCallback cb) override;
@@ -73,6 +74,7 @@ private:
 
   // Управление симуляцией
   std::atomic<bool> running_{false};
+  std::atomic<bool> stop_requested_{false};
 
   // Колбэки GUI
   PCCallback on_pc_changed_;

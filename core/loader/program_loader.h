@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "hex_parser.h"
 
 /**
@@ -8,6 +10,10 @@
 struct ProgramImage {
   std::vector<uint8_t> flash;
   std::vector<uint8_t> eeprom;
+
+  // Что загрузчик не смог разместить (не ошибка, но пользователю стоит знать),
+  // например данные fuse/lock-битов.
+  std::vector<std::string> warnings;
 
   // опционально:
   uint32_t entryPoint = 0;

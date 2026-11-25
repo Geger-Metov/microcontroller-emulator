@@ -3,6 +3,7 @@
 #include <map>
 #include <stdexcept>
 
+#include "../common/errors.h"
 #include "Interfaces.h"
 
 class CodeBus : public ICodeBus {
@@ -45,13 +46,13 @@ private:
     auto it = regions_.upper_bound(addr);
 
     if (it == regions_.begin()) {
-      throw std::out_of_range("CodeBus: unmapped address");
+      throw MemoryAccessError("CodeBus: unmapped address");
     }
 
     --it;
 
     if (addr > it->second.end_word) {
-      throw std::out_of_range("CodeBus: unmapped address");
+      throw MemoryAccessError("CodeBus: unmapped address");
     }
 
     return it->second;
@@ -61,13 +62,13 @@ private:
     auto it = regions_.upper_bound(addr);
 
     if (it == regions_.begin()) {
-      throw std::out_of_range("CodeBus: unmapped address");
+      throw MemoryAccessError("CodeBus: unmapped address");
     }
 
     --it;
 
     if (addr > it->second.end_word) {
-      throw std::out_of_range("CodeBus: unmapped address");
+      throw MemoryAccessError("CodeBus: unmapped address");
     }
 
     return it->second;

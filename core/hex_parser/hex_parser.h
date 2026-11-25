@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <istream>
-#include <string>
 #include <vector>
 
 /**
@@ -33,13 +32,18 @@ struct HexImage {
   std::vector<HexRecord> records;
 };
 
+/**
+ * Парсер Intel HEX.
+ *
+ * Любая ошибка формата — std::runtime_error с номером строки и причиной.
+ * Допустимы пробелы/табы по краям строки, CRLF, пустые строки, строчные
+ * hex-цифры. Поддерживаются записи 00–05; адреса из записей 02 (сегмент * 16) и
+ * 04 (линейный, старшие 16 бит) учитываются в HexRecord::address.
+ * Разбор останавливается на первой записи EndOfFile (остаток файла
+ * игнорируется).
+ */
 class HexParser {
 public:
   ~HexParser() = default;
   HexImage parse(std::istream &input);
-
-private:
-  bool verifyChecksum(const std::string &line);
-  HexRecord parseLine(const std::string &line, uint32_t upper_linear_base);
-  uint8_t hexByte(const std::string &str, size_t pos);
 };

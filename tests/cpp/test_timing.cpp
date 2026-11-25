@@ -1,4 +1,10 @@
 // Учёт тактов, reset, прерывания (приоритет, задержка после RETI), стек.
+#include <atomic>
+#include <chrono>
+#include <string>
+#include <thread>
+
+#include "../../core/common/errors.h"
 #include "test_framework.h"
 #include "test_util.h"
 
@@ -102,4 +108,69 @@ TEST(access_outside_address_space_still_throws_with_hex_address) {
     CHECK(std::string(e.what()).find("0x0900") != std::string::npos);
   }
   CHECK(threw);
+}
+
+// ---- D-21: остановка и состояние запуска ----------------------------------
+
+TEST(run_for_cycles_returns_executed_cycles) {
+  auto emu = make_emu({{0, {0xCFFF}}}); // RJMP .-1 : 2 такта на инструкцию
+  uint64_t done = emu->run_for_cycles(1000);
+  CHECK_EQ(done, 1000u);
+  CHECK_EQ(emu->get_cycle_count(), 1000u);
+  CHECK(!emu->is_running());
+}
+
+TEST(pause_from_another_thread_stops_a_long_run) {
+  auto emu = make_emu({{0, {0xCFFF}}}); // бесконечный цикл
+  std::atomic<uint64_t> done{0};
+  std::thread worker([&] { done = emu->run_for_cycles(~0ull >> 2); });
+
+  // Ждём, пока запуск действительно начнётся.
+  for (int i = 0; i < 2000 && !emu->is_running(); ++i)
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  CHECK(emu->is_running());
+
+  emu->pause();
+  worker.join();
+  CHECK(!emu->is_running());
+  CHECK(done.load() > 0);
+  CHECK(done.load() < (~0ull >> 2));
+  CHECK_EQ(done.load(), emu->get_cycle_count()); // счётчик согласован
+}
+
+TEST(pause_without_a_run_does_not_block_the_next_run) {
+  auto emu = make_emu({{0, {0xCFFF}}});
+  emu->pause();
+  emu->stop();
+  CHECK_EQ(emu->run_for_cycles(100), 100u);
+}
+
+TEST(running_flag_is_cleared_when_run_throws) {
+  auto emu = make_emu({{0, {0x95D8}}}); // ELPM: Illegal instruction
+  CHECK_THROWS(emu->run_for_cycles(100));
+  CHECK(!emu->is_running());
+}
+
+TEST(illegal_instruction_error_names_opcode_and_address) {
+  auto emu = make_emu({{0, {0x0000, 0x95D8}}});
+  try {
+    emu->run_for_cycles(100);
+    CHECK(false);
+  } catch (const IllegalInstructionError &e) {
+    std::string m = e.what();
+    CHECK(m.find("0x95D8") != std::string::npos);
+    CHECK(m.find("0x0001") != std::string::npos);  // адрес в словах
+    CHECK(m.find("0x00002") != std::string::npos); // адрес в байтах
+  }
+}
+
+TEST(bus_errors_are_memory_access_errors) {
+  auto emu = make_emu({{0, {0x0000}}});
+  bool data = false;
+  try {
+    emu->read_data(0x9000, 1);
+  } catch (const MemoryAccessError &) {
+    data = true;
+  }
+  CHECK(data);
 }

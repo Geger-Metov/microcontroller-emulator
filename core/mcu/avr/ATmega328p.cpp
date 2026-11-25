@@ -49,6 +49,11 @@ std::unique_ptr<IEmulatorFacade> ATmega328P::create() {
   facade->add_memory_device(std::move(ctx->sp_device));
   facade->add_memory_device(std::move(ctx->io_fallback));
 
+  // Карта пространства данных (для отладчика/GUI); границы включительно.
+  facade->add_memory_region("Registers", 0x0000, 0x001F, true, true);
+  facade->add_memory_region("I/O", 0x0020, 0x00FF, true, true);
+  facade->add_memory_region("SRAM", 0x0100, 0x08FF, true, true);
+
   // временная заглушка
   facade->add_memory_device(std::move(ctx->eearl));
   facade->add_memory_device(std::move(ctx->eearh));
@@ -150,18 +155,28 @@ void ATmega328P::build_memory_map(MCUContext &ctx) {
   ctx.code_bus->map(0x0000, 0x3FFF, ctx.flash.get());
 }
 
-void ATmega328P::load_hex(IEmulatorFacade &facade, std::istream &hex_stream) {
+std::vector<std::string> ATmega328P::load_hex(IEmulatorFacade &facade,
+                                              std::istream &hex_stream) {
   // 1. Парсим HEX
   HexParser parser;
   HexImage hex = parser.parse(hex_stream);
 
-  // 2. Загружаем под конкретный AVR (ATmega328P)
-  AVRMemoryLayout layout = {32768, 1024, 0, 0}; // flash 32 KiB, eeprom 1 KiB
+  // 2. Раскладываем под ATmega328P: flash 32 КиБ, EEPROM 1 КиБ
+  AVRMemoryLayout layout = {32768, 1024, AVR_HEX_FLASH_BASE,
+                            AVR_HEX_EEPROM_BASE};
   AVRProgramLoader loader(layout);
   ProgramImage prog = loader.load(hex);
 
   // 3. Записываем во flash через фасад
   facade.load_flash_bytes(0, prog.flash.data(), prog.flash.size());
 
-  // EEPROM в MVP не используется, но при необходимости можно аналогично
+  // EEPROM пока не эмулируется — сообщаем, если в файле были её данные
+  for (uint8_t b : prog.eeprom) {
+    if (b != 0xFF) {
+      prog.warnings.push_back(
+          "HEX contains EEPROM data, but EEPROM is not emulated");
+      break;
+    }
+  }
+  return prog.warnings;
 }

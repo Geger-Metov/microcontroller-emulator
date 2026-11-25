@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "../common/errors.h"
 #include "Interfaces.h"
 
 /**
@@ -117,7 +118,7 @@ private:
 
     char buf[48];
     std::snprintf(buf, sizeof buf, "0x%04X", static_cast<unsigned>(addr));
-    throw std::out_of_range(std::string("MemoryBus: no device at address ") +
+    throw MemoryAccessError(std::string("MemoryBus: no device at address ") +
                             buf);
   }
 };

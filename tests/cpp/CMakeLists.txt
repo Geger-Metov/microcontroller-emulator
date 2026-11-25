@@ -8,7 +8,8 @@ add_executable(mcu_tests
     test_timer0.cpp
     test_timing.cpp
 )
-target_link_libraries(mcu_tests PRIVATE mcu_core)
+find_package(Threads REQUIRED)
+target_link_libraries(mcu_tests PRIVATE mcu_core Threads::Threads)
 target_compile_definitions(mcu_tests PRIVATE
     MCU_HEX_DIR="${CMAKE_CURRENT_SOURCE_DIR}/../data/hex")
 mcu_apply_warnings(mcu_tests)

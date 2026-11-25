@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "ATmega328p.h"
+#include "Interfaces.h"
 
 namespace testutil {
 

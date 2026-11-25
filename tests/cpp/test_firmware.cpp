@@ -4,6 +4,7 @@
 #include <string>
 
 #include "ATmega328p.h"
+#include "Interfaces.h"
 #include "test_framework.h"
 
 #ifndef MCU_HEX_DIR
