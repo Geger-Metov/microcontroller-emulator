@@ -29,6 +29,8 @@ class FakeEmulator:
         self.loaded: list[str] = []
         self.fail_step: Exception | None = None
         self.fail_run: Exception | None = None
+        # Что вернёт disassemble(): строки в формате модуля
+        self.program: list[dict] = []
         self.runs: list[int] = []  # размеры пачек, переданных в run()
         self.fail_load: Exception | None = None
 
@@ -75,6 +77,10 @@ class FakeEmulator:
 
     def read_memory_block(self, addr: int, length: int) -> bytes:
         return bytes(self.memory.get(addr + i, 0) for i in range(length))
+
+    def disassemble(self, word_addr: int, count: int) -> list[dict]:
+        rows = self.program[word_addr:]
+        return [dict(r) for r in rows[:count]]
 
     def snapshot(self) -> dict:
         return {

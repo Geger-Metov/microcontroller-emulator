@@ -101,3 +101,33 @@ def test_default_emulator_is_imported_lazily():
             SimController()
     else:
         assert SimController().get_state()["pc"] == 0
+
+
+def test_get_listing_returns_listing(controller, fake_emu):
+    fake_emu.program = [
+        {"addr": 0, "size": 1, "words": [0], "text": "nop", "known": True}
+    ]
+    listing = controller.get_listing()
+    assert listing is not None
+    assert [r.text for r in listing.rows] == ["nop"]
+    assert controller.last_error is None
+
+
+def test_get_listing_error_is_reported_not_raised(controller, fake_emu):
+    errors = []
+    controller.set_error_callback(errors.append)
+
+    def boom(word_addr, count):
+        raise RuntimeError("flash is broken")
+
+    fake_emu.disassemble = boom
+    assert controller.get_listing() is None
+    assert "flash is broken" in (controller.last_error or "")
+    assert errors and "flash is broken" in errors[0]
+
+
+def test_get_listing_does_not_trigger_gui_update(controller, fake_emu):
+    calls = []
+    controller.set_gui_callback(lambda: calls.append(1))
+    controller.get_listing()
+    assert calls == []

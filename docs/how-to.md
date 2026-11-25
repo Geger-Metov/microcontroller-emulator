@@ -73,9 +73,11 @@ uv run pytest -v                       # тесты лежат в ../tests/pytho
 
 ## Посмотреть, что делает прошивка
 
-Дизассемблера в проекте нет (см. `status.md`). Пока: `avr-objdump -d firmware.elf` (если есть исходники),
-либо трассировка через маленькую C++-программу с `ATmega328P::create()` + `load_hex` +
-`step_instruction()` и чтением `0x25`/`0x2B` (PORTB/PORTD).
+В GUI: правая панель → меню → «Дизассемблер». Листинг строится после загрузки HEX; строка, куда указывает PC,
+подсвечена. Адреса — **байтовые** (как в `avr-objdump` и HEX), цели переходов тоже. Серым — опкоды, которых нет
+в ATmega328P (`.word 0x…`). Из Python: `emu.disassemble(word_addr, count)`.
+Для сверки с исходниками: `avr-objdump -d firmware.elf`. Для трассировки без GUI — маленькая C++-программа с
+`ATmega328P::create()` + `load_hex` + `step_instruction()`.
 
 ## Типичные ловушки
 

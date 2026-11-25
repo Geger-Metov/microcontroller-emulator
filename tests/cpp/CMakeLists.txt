@@ -1,6 +1,7 @@
 add_executable(mcu_tests
     test_main.cpp
     test_decoder.cpp
+    test_disasm.cpp
     test_firmware.cpp
     test_hex_parser.cpp
     test_isa.cpp

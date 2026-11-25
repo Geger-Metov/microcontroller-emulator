@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import Any, NamedTuple, Protocol
 
+from gui.disasm_model import Listing, load_listing
 from gui.run_pacing import DEFAULT_CLOCK_HZ
 
 # Адреса регистров портов в пространстве данных ATmega328P (I/O-адрес + 0x20).
@@ -23,6 +24,7 @@ class EmulatorLike(Protocol):
     def read_memory(self, addr: int) -> int: ...
     def read_memory_block(self, addr: int, length: int) -> bytes: ...
     def snapshot(self) -> dict[str, Any]: ...
+    def disassemble(self, word_addr: int, count: int) -> list[dict[str, Any]]: ...
 
 
 class PortRegisters(NamedTuple):
@@ -94,6 +96,19 @@ class SimController:
 
     def reset(self) -> bool:
         return self._guarded("Ошибка сброса", self.emu.reset)
+
+    def get_listing(self) -> Listing | None:
+        """Дизассемблированная программа; при ошибке None (причина — в `last_error`).
+
+        Только чтение, поэтому GUI-колбэк обновления не вызывается.
+        """
+        try:
+            return load_listing(self.emu)
+        except Exception as exc:  # noqa: BLE001 — см. _guarded
+            self.last_error = f"Не удалось дизассемблировать: {exc}"
+            if self._error_callback:
+                self._error_callback(self.last_error)
+            return None
 
     def get_state(self):
         """Вернуть словарь с состоянием CPU для отображения."""

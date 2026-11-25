@@ -37,6 +37,7 @@ flowchart TB
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `interfaces/Interfaces.h` | все интерфейсы: `IMemoryMapped`, `ITickable`, `IResettable`, `ICPU`, `IDataBus`, `ICodeBus`, `IInterruptSink`, `IEmulatorFacade`                                                                                         |
 | `cpu/`                    | `AVR_CPU` (цикл fetch→decode→execute, стек, прерывания), `avr_instructions.*` (семантика инструкций), `avre_plus_instruction_table.cpp` (таблица mask/pattern), `AVRExecutionContext.h` (узкий интерфейс для инструкций) |
+| `disasm/`                 | `avr::disassemble` — текст инструкции (алиасы как в objdump, переходы — байтовые адреса)                                                                                                                                 |
 | `decoder/`                | `AVRDecoder` (справочник по 16-битному опкоду) и `decode_*` — разбор операндов                                                                                                                                           |
 | `bus/`                    | `MemoryBus` (диапазон адресов → устройство, тикает периферию), `CodeBus`, `FlashDevice`, `SRAMDevice`                                                                                                                    |
 | `mcu/avr/`                | `ATmega328P` (сборка МК), константы (векторы), `AVR_GPIO`                                                                                                                                                                |
@@ -120,6 +121,7 @@ Flash — массив байт, но CPU обращается к нему **с�
 - Запуск: `step()`, `run(cycles) -> выполненные такты`, `reset()`; `run()` **освобождает GIL**, поэтому его
   можно вызывать из рабочего потока. `stop()` (потокобезопасно) просит идущий `run()` выйти после текущей
   инструкции; `is_running()`. Пока `run()` идёт, остальные методы бросают `EmulatorBusyError`.
+- Дизассемблер: `disassemble(word_addr, count)` → `[{addr, size, words, text, known}]`.
 - Состояние: `snapshot()` (pc, sp, sreg, cycles, registers одним вызовом), `read_memory_block`,
   `read_flash`, `get_memory_map()` (регионы пространства данных).
 - Ошибки (все наследуют `EmulatorError`): `IllegalInstructionError` (с опкодом и адресом),
@@ -133,4 +135,5 @@ Flash — массив байт, но CPU обращается к нему **с�
   провода (`wire_item.py`). Состояние пинов читается из `DDRx/PORTx`, светодиод включается, если подключён
   к выходному пину с единицей. Кнопка пока не влияет на эмулятор (см. [status.md](status.md)).
 - `controller.py` — тонкая обёртка над `emulator_backend.Emulator` (состояние — `snapshot()`, порты — один `read_memory_block`).
+- `disasm_model.py` (`Listing`, поиск строки по PC) и `disasm_widget.py` — окно дизассемблера.
 - `run_pacing.py` — `RunPacer`: реальное время → такты МК для режима Run.

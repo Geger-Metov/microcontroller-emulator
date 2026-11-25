@@ -210,3 +210,61 @@ def test_pin_labels_name_the_right_port(view):
     assert [chip.pin_labels_D[i].toPlainText() for i in range(8)] == [
         f"PD{i}" for i in range(8)
     ]
+
+
+# ---- Дизассемблер ------------------------------------------------------------
+
+
+@pytest.fixture
+def disasm(qtbot):
+    from gui.disasm_model import Instruction, Listing
+    from gui.disasm_widget import DisassemblyWidget
+
+    w = DisassemblyWidget()
+    qtbot.addWidget(w)
+    w.set_listing(
+        Listing(
+            [
+                Instruction(0, 2, (0x940C, 0x0034), "jmp 0x0068", True),
+                Instruction(2, 1, (0x0000,), "nop", True),
+                Instruction(3, 1, (0x95D8,), ".word 0x95D8", False),
+            ]
+        )
+    )
+    return w
+
+
+def test_disasm_widget_shows_byte_address_code_and_text(disasm):
+    assert disasm.rowCount() == 3
+    assert [disasm.item(0, c).text() for c in range(3)] == [
+        "0x0000",
+        "940C 0034",
+        "jmp 0x0068",
+    ]
+    assert disasm.item(2, 0).text() == "0x0006"  # слово 3 -> байт 6
+
+
+def test_disasm_widget_highlights_current_pc_row(disasm):
+    disasm.highlight_pc(2)
+    assert disasm.current_row() == 1
+    assert disasm.item(1, 2).background().color() == QColor(255, 235, 130)
+
+    disasm.highlight_pc(0)  # прежняя строка очищается
+    assert disasm.current_row() == 0
+    assert disasm.item(1, 2).background().color() != QColor(255, 235, 130)
+
+
+def test_disasm_widget_pc_outside_program_clears_highlight(disasm):
+    disasm.highlight_pc(2)
+    disasm.highlight_pc(0x100)
+    assert disasm.current_row() is None
+
+
+def test_disasm_widget_without_listing_is_safe(qtbot):
+    from gui.disasm_widget import DisassemblyWidget
+
+    w = DisassemblyWidget()
+    qtbot.addWidget(w)
+    w.highlight_pc(5)
+    w.set_listing(None)
+    assert w.rowCount() == 0

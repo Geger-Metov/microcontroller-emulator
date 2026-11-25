@@ -100,8 +100,9 @@ class SimulatorView(QWidget):
         self.btn_connect.toggled.connect(self._on_toggle_connect)
         self.speed_box.currentIndexChanged.connect(self._on_speed_changed)
 
-        # Колбэк обновления GUI
+        # Колбэки GUI
         self.update_callback = None
+        self.program_loaded_callback = None  # после успешной загрузки HEX
 
         if controller is not None:
             controller.set_error_callback(self._on_error)
@@ -159,8 +160,8 @@ class SimulatorView(QWidget):
         path, _ = QFileDialog.getOpenFileName(
             self, "Open HEX file", "", "Intel HEX (*.hex);;All Files (*)"
         )
-        if path:
-            self.controller.load_hex(path)
+        if path and self.controller.load_hex(path) and self.program_loaded_callback:
+            self.program_loaded_callback()
 
     def _on_step(self):
         if self.controller and self.controller.step() and self.update_callback:

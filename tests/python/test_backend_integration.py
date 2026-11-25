@@ -2,6 +2,7 @@
 
 import threading
 import time
+from itertools import pairwise
 
 import pytest
 
@@ -177,3 +178,28 @@ def test_load_hex_returns_warnings(tmp_path):
     e = backend.Emulator()
     warnings = e.load_hex(str(hex_file))
     assert len(warnings) == 1 and "0x820000" in warnings[0]
+
+
+def test_disassemble_real_firmware(emu):
+    rows = emu.disassemble(0, 40)
+    assert len(rows) == 40
+    first = rows[0]
+    assert first["text"] == "jmp 0x0068" and first["size"] == 2
+    assert first["words"] == [0x940C, 0x0034] and first["known"]
+    # адреса идут подряд с учётом двухсловных инструкций
+    for prev, nxt in pairwise(rows):
+        assert nxt["addr"] == prev["addr"] + prev["size"]
+
+
+def test_disassemble_stops_at_end_of_flash(emu):
+    rows = emu.disassemble(0x3FFE, 100)
+    assert [r["addr"] for r in rows] == [0x3FFE, 0x3FFF]
+
+
+def test_disassemble_listing_loads_through_the_model(emu):
+    from gui.disasm_model import load_listing
+
+    listing = load_listing(emu)
+    assert 0 < len(listing) < 400  # хвост 0xFFFF отброшен
+    assert listing.rows[0].text == "jmp 0x0068"
+    assert listing.row_for_pc(0x34) is not None  # начало main (байт 0x68)

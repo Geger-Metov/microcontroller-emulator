@@ -49,6 +49,9 @@ add_library(mcu_core STATIC
     # Decoder
     decoder/avr_decode_helpers.cpp
 
+    # Disassembler
+    disasm/avr_disasm.cpp
+
     # Facade
     facade/EmulatorFacade.cpp
 

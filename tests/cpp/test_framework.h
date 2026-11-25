@@ -7,6 +7,7 @@
 #include <exception>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace mctest {
@@ -50,13 +51,22 @@ inline int run_all() {
   return failed == 0 ? 0 : 1;
 }
 
+// Числа печатаем через унарный плюс (uint8_t как число, а не символ), прочее —
+// как есть.
+template <typename T> inline decltype(auto) printable(const T &v) {
+  if constexpr (std::is_arithmetic_v<T>)
+    return +v;
+  else
+    return (v);
+}
+
 template <typename A, typename B>
 inline void check_eq(const A &a, const B &b, const char *ea, const char *eb,
                      const char *file, int line) {
   if (!(a == b)) {
     std::ostringstream os;
     os << file << ":" << line << ": CHECK_EQ(" << ea << ", " << eb
-       << ") failed: " << +a << " != " << +b;
+       << ") failed: " << printable(a) << " != " << printable(b);
     throw Failure{os.str()};
   }
 }

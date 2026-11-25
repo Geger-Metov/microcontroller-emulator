@@ -5,6 +5,7 @@
 #include <pybind11/stl.h> // для std::vector ↔ list
 
 #include "../common/errors.h"
+#include "../disasm/avr_disasm.h"
 #include "ATmega328p.h"
 
 namespace py = pybind11;
@@ -129,6 +130,43 @@ public:
     return py::bytes(out);
   }
 
+  // Дизассемблирует до `count` инструкций начиная со слова `word_addr`.
+  // Возвращает [{addr (слова), size (слов), words, text, known}]; доходит до
+  // конца flash и останавливается. Адреса переходов в text — байтовые.
+  py::list disassemble(uint32_t word_addr, uint32_t count) {
+    check_idle();
+    py::list rows;
+    uint32_t addr = word_addr;
+    for (uint32_t i = 0; i < count; ++i) {
+      uint16_t w0;
+      try {
+        w0 = static_cast<uint16_t>(facade_->read_program(addr, 1) & 0xFFFF);
+      } catch (const MemoryAccessError &) {
+        break; // конец flash
+      }
+      uint16_t w1 = 0xFFFF;
+      try {
+        w1 = static_cast<uint16_t>(facade_->read_program(addr + 1, 1) & 0xFFFF);
+      } catch (const MemoryAccessError &) {
+        // последняя инструкция flash: второго слова нет
+      }
+      const avr::Disassembled d = avr::disassemble(w0, w1, addr);
+      py::list words;
+      words.append(w0);
+      if (d.words == 2)
+        words.append(w1);
+      py::dict row;
+      row["addr"] = addr;
+      row["size"] = d.words;
+      row["words"] = words;
+      row["text"] = d.text;
+      row["known"] = d.known;
+      rows.append(row);
+      addr += d.words;
+    }
+    return rows;
+  }
+
   // Регионы пространства данных: [{name, start, end, readable, writable}].
   py::list get_memory_map() {
     check_idle();
@@ -214,6 +252,10 @@ PYBIND11_MODULE(emulator_backend, m) {
            "Read a 16-bit word from flash")
       .def("read_flash", &EmulatorWrapper::read_flash, py::arg("byte_addr"),
            py::arg("length"), "Read `length` bytes of flash as bytes")
+      .def("disassemble", &EmulatorWrapper::disassemble, py::arg("word_addr"),
+           py::arg("count"),
+           "Disassemble up to `count` instructions from word address: list of "
+           "dict(addr, size, words, text, known)")
       .def("get_memory_map", &EmulatorWrapper::get_memory_map,
            "Data-space regions: list of dict(name, start, end, readable, "
            "writable); end is inclusive")

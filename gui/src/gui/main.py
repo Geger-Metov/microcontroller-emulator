@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 
 from gui.controller import SimController
 from gui.cpu_state_widget import CpuStateWidget
+from gui.disasm_widget import DisassemblyWidget
 from gui.sim_view import SimulatorView
 
 
@@ -112,6 +113,13 @@ class MainWindow(QMainWindow):
         self.right_stack.addWidget(self.cpu_widget)
         self.right_panel_menu.addAction("CPU", lambda: self.switch_right_panel(3))
 
+        self.disasm_widget = DisassemblyWidget()
+        self.right_stack.addWidget(self.disasm_widget)
+        self.right_panel_menu.addAction(
+            "Дизассемблер", lambda: self.switch_right_panel(4)
+        )
+        self.sim_view.program_loaded_callback = self.reload_disassembly
+
         # Собираем горизонтальный сплиттер
         horizontal_splitter.addWidget(self.left_panel)
         horizontal_splitter.addWidget(self.central_tabs)
@@ -138,6 +146,8 @@ class MainWindow(QMainWindow):
         state = self.controller.get_state()
         self.cpu_widget.update_state(state)
 
+        self.disasm_widget.highlight_pc(state["pc"])
+
         # обновляем чип
         if self.sim_view.chip_scene is not None:
             self.sim_view.chip_scene.refresh_pins()
@@ -145,6 +155,11 @@ class MainWindow(QMainWindow):
         # Пишем в терминал краткую информацию
         msg = f"Step executed. PC=0x{state['pc']:04X}, SREG=0x{state['sreg']:02X}"
         self.bottom_panel.append(msg)
+
+    def reload_disassembly(self):
+        """Прошивку загрузили заново — перестроить листинг."""
+        self.disasm_widget.set_listing(self.controller.get_listing())
+        self.disasm_widget.highlight_pc(self.controller.get_state()["pc"])
 
     def create_left_panel(self):
         panel = QListWidget()
@@ -429,7 +444,13 @@ class MainWindow(QMainWindow):
 
     def switch_right_panel(self, index):
         self.right_stack.setCurrentIndex(index)
-        titles = ["📋 Компоненты", "📚 Документация", "⚙️ Свойства", "🖥️ CPU"]
+        titles = [
+            "📋 Компоненты",
+            "📚 Документация",
+            "⚙️ Свойства",
+            "🖥️ CPU",
+            "📜 Дизассемблер",
+        ]
         if index < len(titles):
             self.right_panel_title.setText(titles[index])
 
