@@ -1,4 +1,5 @@
 import time
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QBrush, QColor, QPainter
@@ -101,8 +102,9 @@ class SimulatorView(QWidget):
         self.speed_box.currentIndexChanged.connect(self._on_speed_changed)
 
         # Колбэки GUI
-        self.update_callback = None
-        self.program_loaded_callback = None  # после успешной загрузки HEX
+        self.update_callback: Callable[[], None] | None = None
+        # вызывается после успешной загрузки HEX
+        self.program_loaded_callback: Callable[[], None] | None = None
 
         if controller is not None:
             controller.set_error_callback(self._on_error)

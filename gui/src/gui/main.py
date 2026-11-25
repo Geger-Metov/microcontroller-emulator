@@ -59,17 +59,17 @@ class MainWindow(QMainWindow):
     component_selected = Signal(str)
     doc_requested = Signal(str)
 
+    central_tabs: QTabWidget
+    left_panel: QListWidget
+    right_panel: QWidget
+    bottom_panel: QTextBrowser
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("MCU SImulator v0.1")
         self.resize(1200, 700)
 
-        # Создание виджетов
-        self.central_tabs = None
-        self.left_panel = None
-        self.right_panel = None
-        self.bottom_panel = None
-
+        # Виджеты создаются в init_ui(); тип объявлен на уровне класса.
         self.controller = SimController()
         self.controller.set_gui_callback(self.on_emulator_updated)
 
