@@ -28,6 +28,8 @@ class FakeEmulator:
         self.resets = 0
         self.loaded: list[str] = []
         self.fail_step: Exception | None = None
+        self.fail_run: Exception | None = None
+        self.runs: list[int] = []  # размеры пачек, переданных в run()
         self.fail_load: Exception | None = None
 
     def step(self) -> None:
@@ -37,8 +39,12 @@ class FakeEmulator:
         self.pc += 1
         self.cycles += 1
 
-    def run(self, cycles: int) -> None:
+    def run(self, cycles: int) -> int:
+        if self.fail_run:
+            raise self.fail_run
+        self.runs.append(cycles)
         self.cycles += cycles
+        return cycles
 
     def reset(self) -> None:
         self.resets += 1
@@ -66,6 +72,18 @@ class FakeEmulator:
 
     def read_memory(self, addr: int) -> int:
         return self.memory.get(addr, 0)
+
+    def read_memory_block(self, addr: int, length: int) -> bytes:
+        return bytes(self.memory.get(addr + i, 0) for i in range(length))
+
+    def snapshot(self) -> dict:
+        return {
+            "pc": self.pc,
+            "sp": 0x8FF,
+            "sreg": 0,
+            "cycles": self.cycles,
+            "registers": [0] * 32,
+        }
 
 
 @pytest.fixture

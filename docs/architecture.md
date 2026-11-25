@@ -132,4 +132,5 @@ Flash — массив байт, но CPU обращается к нему **с�
 - `simulation_scene.py` — графическая сцена: чип (`chip_item.py`), светодиод и кнопка (`interactive_items.py`),
   провода (`wire_item.py`). Состояние пинов читается из `DDRx/PORTx`, светодиод включается, если подключён
   к выходному пину с единицей. Кнопка пока не влияет на эмулятор (см. [status.md](status.md)).
-- `controller.py` — тонкая обёртка над `emulator_backend.Emulator`.
+- `controller.py` — тонкая обёртка над `emulator_backend.Emulator` (состояние — `snapshot()`, порты — один `read_memory_block`).
+- `run_pacing.py` — `RunPacer`: реальное время → такты МК для режима Run.

@@ -1,6 +1,9 @@
+import time
+
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QBrush, QColor, QPainter
 from PySide6.QtWidgets import (
+    QComboBox,
     QFileDialog,
     QGraphicsView,
     QHBoxLayout,
@@ -11,7 +14,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from gui.run_pacing import RunPacer
 from gui.simulation_scene import SimulationScene
+
+FRAME_MS = 16  # ≈60 кадров/с
+# Скорость относительно реального времени (текст в списке → множитель)
+SPEEDS = ("1×", 1.0), ("0.1×", 0.1), ("0.01×", 0.01)
 
 
 class SimulatorView(QWidget):
@@ -28,6 +36,10 @@ class SimulatorView(QWidget):
         self.btn_run = QPushButton("Run")
         self.btn_step = QPushButton("Step")
         self.btn_reset = QPushButton("Reset")
+        self.speed_box = QComboBox()
+        for label, speed in SPEEDS:
+            self.speed_box.addItem(label, speed)
+        self.speed_box.setToolTip("Скорость относительно реального времени")
         self.btn_connect = QPushButton("Connect")
         self.btn_connect.setCheckable(True)
 
@@ -35,6 +47,7 @@ class SimulatorView(QWidget):
         toolbar.addWidget(self.btn_run)
         toolbar.addWidget(self.btn_step)
         toolbar.addWidget(self.btn_reset)
+        toolbar.addWidget(self.speed_box)
         toolbar.addWidget(self.btn_connect)
         toolbar.addStretch()
         layout.addLayout(toolbar)
@@ -76,6 +89,8 @@ class SimulatorView(QWidget):
         # Таймер
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._timer_tick)
+        self.pacer = RunPacer()
+        self._now = time.perf_counter  # подменяется в тестах
 
         # Сигналы
         self.btn_load.clicked.connect(self._on_load)
@@ -83,6 +98,7 @@ class SimulatorView(QWidget):
         self.btn_run.clicked.connect(self._on_run)
         self.btn_reset.clicked.connect(self._on_reset)
         self.btn_connect.toggled.connect(self._on_toggle_connect)
+        self.speed_box.currentIndexChanged.connect(self._on_speed_changed)
 
         # Колбэк обновления GUI
         self.update_callback = None
@@ -156,8 +172,13 @@ class SimulatorView(QWidget):
         if self.timer.isActive():
             self._stop_run()
         else:
-            self.timer.start(50)
+            self.pacer.clock_hz = self.controller.clock_hz
+            self.pacer.start(self._now())
+            self.timer.start(FRAME_MS)
             self.btn_run.setText("Stop")
+
+    def _on_speed_changed(self, _index):
+        self.pacer.speed = self.speed_box.currentData()
 
     def _on_reset(self):
         if self.controller:
@@ -166,5 +187,9 @@ class SimulatorView(QWidget):
                 self.update_callback()
 
     def _timer_tick(self):
-        if self.controller and self.controller.step() and self.update_callback:
+        """Один кадр: столько тактов, сколько прошло в реальном времени."""
+        if not self.controller:
+            return
+        cycles = self.pacer.cycles_since_last(self._now())
+        if cycles and self.controller.run_cycles(cycles) and self.update_callback:
             self.update_callback()

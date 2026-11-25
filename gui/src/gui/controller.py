@@ -1,5 +1,7 @@
 from collections.abc import Callable
-from typing import NamedTuple, Protocol
+from typing import Any, NamedTuple, Protocol
+
+from gui.run_pacing import DEFAULT_CLOCK_HZ
 
 # Адреса регистров портов в пространстве данных ATmega328P (I/O-адрес + 0x20).
 PINB, DDRB, PORTB = 0x23, 0x24, 0x25
@@ -19,6 +21,8 @@ class EmulatorLike(Protocol):
     def get_registers(self) -> list[int]: ...
     def get_cycle_count(self) -> int: ...
     def read_memory(self, addr: int) -> int: ...
+    def read_memory_block(self, addr: int, length: int) -> bytes: ...
+    def snapshot(self) -> dict[str, Any]: ...
 
 
 class PortRegisters(NamedTuple):
@@ -42,6 +46,7 @@ class SimController:
 
             emulator = Emulator()
         self.emu = emulator
+        self.clock_hz = DEFAULT_CLOCK_HZ  # частота МК для режима Run
         self.emu.reset()
         self.last_error: str | None = None
         self._gui_callback: Callable[[], None] | None = None
@@ -92,21 +97,26 @@ class SimController:
 
     def get_state(self):
         """Вернуть словарь с состоянием CPU для отображения."""
+        snap = self.emu.snapshot()  # одним вызовом, а не пятью
         return {
-            "pc": self.emu.get_pc(),
-            "sp": self.emu.get_sp(),
-            "sreg": self.emu.get_sreg(),
-            "regs": self.emu.get_registers(),
-            "cycles": self.emu.get_cycle_count(),
+            "pc": snap["pc"],
+            "sp": snap["sp"],
+            "sreg": snap["sreg"],
+            "regs": snap["registers"],
+            "cycles": snap["cycles"],
         }
 
     def get_port_registers(self) -> dict[str, PortRegisters]:
         """PIN/DDR/PORT портов B и D."""
-        read = self.emu.read_memory
-        return {
-            "B": PortRegisters(read(PINB), read(DDRB), read(PORTB)),
-            "D": PortRegisters(read(PIND), read(DDRD), read(PORTD)),
-        }
+        # Один блок PINB..PORTD (9 байт; PINC..PORTC между ними — RAZ).
+        block = self.emu.read_memory_block(PINB, PORTD - PINB + 1)
+
+        def port(pin: int, ddr: int, port_reg: int) -> PortRegisters:
+            return PortRegisters(
+                block[pin - PINB], block[ddr - PINB], block[port_reg - PINB]
+            )
+
+        return {"B": port(PINB, DDRB, PORTB), "D": port(PIND, DDRD, PORTD)}
 
     def get_gpio_state(self):
         """Состояние пинов порта B (совместимость со старым форматом)."""

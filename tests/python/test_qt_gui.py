@@ -64,14 +64,65 @@ def test_run_button_toggles_timer_and_label(qtbot, view):
     assert view.btn_run.text() == "Run"
 
 
-def test_run_executes_steps_over_time(qtbot, view, fake_emu):
+class FakeClock:
+    """Управляемое время: тест сам решает, сколько секунд «прошло»."""
+
+    def __init__(self):
+        self.t = 100.0
+
+    def __call__(self):
+        return self.t
+
+
+def test_run_executes_cycles_in_batches_by_clock_frequency(view, fake_emu):
+    clock = FakeClock()
+    view._now = clock
+    view.controller.clock_hz = 1_000_000
+    view._on_run()  # старт: отсчёт времени с t=100
+
+    clock.t += 0.016  # прошло 16 мс
+    view._timer_tick()
+    assert fake_emu.runs == [16_000]  # 1 МГц * 0.016 с
+
+    clock.t += 0.05
+    view._timer_tick()
+    assert fake_emu.runs == [16_000, 50_000]
+    view._on_run()  # стоп
+
+
+def test_run_speed_selector_scales_batches(view, fake_emu):
+    clock = FakeClock()
+    view._now = clock
+    view.controller.clock_hz = 1_000_000
+    view.speed_box.setCurrentIndex(1)  # 0.1×
+    view._on_run()
+
+    clock.t += 0.1
+    view._timer_tick()
+    assert fake_emu.runs == [10_000]
+    view._on_run()
+
+
+def test_run_updates_gui_after_each_batch(view, fake_emu):
+    clock = FakeClock()
+    view._now = clock
+    calls = []
+    view.update_callback = lambda: calls.append(1)
+    view._on_run()
+    clock.t += 0.016
+    view._timer_tick()
+    assert calls == [1]
+    view._on_run()
+
+
+def test_run_timer_ticks_by_itself(qtbot, view, fake_emu):
     qtbot.mouseClick(view.btn_run, Qt.MouseButton.LeftButton)
-    qtbot.waitUntil(lambda: fake_emu.steps >= 3, timeout=2000)
+    qtbot.waitUntil(lambda: len(fake_emu.runs) >= 3, timeout=2000)
     qtbot.mouseClick(view.btn_run, Qt.MouseButton.LeftButton)
 
 
 def test_emulator_error_stops_run_and_is_shown(qtbot, view, fake_emu):
-    fake_emu.fail_step = RuntimeError("Illegal AVR instruction")
+    fake_emu.fail_run = RuntimeError("Illegal AVR instruction")
 
     qtbot.mouseClick(view.btn_run, Qt.MouseButton.LeftButton)
     qtbot.waitUntil(lambda: bool(view.shown_errors), timeout=2000)
