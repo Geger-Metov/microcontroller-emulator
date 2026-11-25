@@ -1,7 +1,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-#include "avr_disasm.h"
+#include "disasm/avr_disasm.h"
 
 namespace avr {
 namespace {

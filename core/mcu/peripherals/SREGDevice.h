@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Interfaces.h"
+#include "interfaces/Interfaces.h"
 
 class SREGDevice : public IMemoryMapped, public ISREG, public IResettable {
 public:

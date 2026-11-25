@@ -1,7 +1,7 @@
 #include <stdexcept>
 
-#include "BasicMemoryDevices.h"
-#include "EmulatorFacade.h"
+#include "bus/BasicMemoryDevices.h"
+#include "facade/EmulatorFacade.h"
 
 EmulatorFacade::EmulatorFacade() {}
 EmulatorFacade::~EmulatorFacade() { stop(); }

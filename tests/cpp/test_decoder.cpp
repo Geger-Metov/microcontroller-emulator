@@ -4,8 +4,8 @@
 #include <memory>
 #include <vector>
 
-#include "ATmega328p.h"
-#include "avr_decode_helpers.h"
+#include "decoder/avr_decode_helpers.h"
+#include "mcu/avr/ATmega328p.h"
 #include "test_framework.h"
 
 namespace {

@@ -7,8 +7,8 @@
 #include <mutex>
 #include <utility>
 
-#include "Interfaces.h"
-#include "avr_instructions.h"
+#include "cpu/avr_instructions.h"
+#include "interfaces/Interfaces.h"
 
 /**
  * Универсальный табличный декодер инструкций AVR.

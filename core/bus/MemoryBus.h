@@ -7,8 +7,8 @@
 #include <string>
 #include <vector>
 
-#include "../common/errors.h"
-#include "Interfaces.h"
+#include "common/errors.h"
+#include "interfaces/Interfaces.h"
 
 /**
  * Шина памяти:

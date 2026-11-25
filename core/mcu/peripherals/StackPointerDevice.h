@@ -1,7 +1,7 @@
 #pragma once
 
-#include "AVR_CPU.h"
-#include "Interfaces.h"
+#include "cpu/AVR_CPU.h"
+#include "interfaces/Interfaces.h"
 
 class StackPointerDevice : public IMemoryMapped {
 public:

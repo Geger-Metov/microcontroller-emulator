@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "avr_loader.h"
-#include "hex_parser.h"
+#include "hex_parser/hex_parser.h"
+#include "loader/avr_loader.h"
 #include "test_framework.h"
 
 namespace {
@@ -143,18 +143,16 @@ TEST(all_errors_are_runtime_error_with_line_number) {
   const std::string ok = rec(0, 0, {1}) + "\n";
   // каждая плохая строка стоит второй в файле
   const std::vector<std::string> bad = {
-      "garbage",         // нет ':'
+      "garbage",         // нет ':' в начале
       ":0",              // слишком короткая
       ":0000000",        // нечётное число цифр
       ":00000001FG",     // не hex-символ
-      ":00 00 00 01 FF", // пробелы внутри
+      ":00 00 00 01 FF", // пробелы внутри записи
       ":01000000",       // нет данных и контрольной суммы
       ":0200000000FE",   // заявлено 2 байта данных, их нет
-      ":00000099"
-      "67",            // неизвестный тип
-      ":0100000102FC", // EOF с данными
-      ":0200000401"
-      "FB", // ExtendedLinear с 1 байтом данных
+      ":0000009967",   // неизвестный тип записи 0x99 (контрольная сумма верна)
+      ":0100000102FC", // EndOfFile с данными (контрольная сумма верна)
+      ":0100000401FA", // ExtendedLinear с 1 байтом вместо 2 (сумма верна)
   };
   for (const std::string &line : bad) {
     std::string msg = parse_error(ok + line + "\n" + EOF_REC + "\n");

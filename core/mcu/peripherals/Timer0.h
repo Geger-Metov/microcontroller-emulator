@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Interfaces.h"
-#include "MMIORegister.h"
+#include "interfaces/Interfaces.h"
+#include "mcu/peripherals/MMIORegister.h"
 
 /**
  * 8-bit Timer/Counter0 (ATmega328P).

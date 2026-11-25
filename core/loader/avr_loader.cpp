@@ -1,8 +1,8 @@
 #include <cstdio>
 #include <cstring>
 
-#include "../common/errors.h"
-#include "avr_loader.h"
+#include "common/errors.h"
+#include "loader/avr_loader.h"
 
 namespace {
 

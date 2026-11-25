@@ -4,7 +4,7 @@
 #include <string>
 #include <thread>
 
-#include "../../core/common/errors.h"
+#include "common/errors.h"
 #include "test_framework.h"
 #include "test_util.h"
 

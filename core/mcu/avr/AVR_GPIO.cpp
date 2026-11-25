@@ -1,5 +1,5 @@
-#include "AVR_GPIO.h"
-#include "ATmega328P_Constants.h"
+#include "mcu/avr/AVR_GPIO.h"
+#include "mcu/avr/ATmega328P_Constants.h"
 
 AVR_GPIO::AVR_GPIO() { reset(); }
 

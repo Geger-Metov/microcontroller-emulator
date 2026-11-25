@@ -4,9 +4,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h> // для std::vector ↔ list
 
-#include "../common/errors.h"
-#include "../disasm/avr_disasm.h"
-#include "ATmega328p.h"
+#include "common/errors.h"
+#include "disasm/avr_disasm.h"
+#include "mcu/avr/ATmega328p.h"
 
 namespace py = pybind11;
 

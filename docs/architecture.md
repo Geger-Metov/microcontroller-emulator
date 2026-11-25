@@ -114,6 +114,12 @@ EEPROM пока не эмулируется — данные из HEX отбра
 Flash — массив байт, но CPU обращается к нему **словами** (`CodeBus::read_word(word_addr)`).
 Подробнее про единицы — в [glossary.md](glossary.md).
 
+## Include-пути
+
+Заголовки подключаются **от корня `core/`**: `#include "cpu/AVR_CPU.h"`, `#include "common/errors.h"` — без
+`../`. Корень добавлен в `target_include_directories(mcu_core PUBLIC …)`, поэтому так же пишут и тесты
+(`tests/cpp`), и биндинги. Новый заголовок в `core/<папка>/x.h` сразу доступен как `"<папка>/x.h"`.
+
 ## API Python-модуля (`emulator_backend`)
 
 Заглушки типов — `gui/stubs/emulator_backend.pyi`.

@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "hex_parser.h"
+#include "hex_parser/hex_parser.h"
 
 /**
  * Универсальное представление загруженной программы

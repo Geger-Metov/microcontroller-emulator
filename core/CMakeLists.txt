@@ -70,20 +70,9 @@ add_library(mcu_core STATIC
 )
 set_target_properties(mcu_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-# Добавляем пути ко всем заголовочным каталогам, чтобы #include "file.h" работали без префиксов
-target_include_directories(mcu_core PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/bindings
-    ${CMAKE_CURRENT_SOURCE_DIR}/bus
-    ${CMAKE_CURRENT_SOURCE_DIR}/cpu
-    ${CMAKE_CURRENT_SOURCE_DIR}/decoder
-    ${CMAKE_CURRENT_SOURCE_DIR}/facade
-    ${CMAKE_CURRENT_SOURCE_DIR}/hex_parser
-    ${CMAKE_CURRENT_SOURCE_DIR}/interfaces
-    ${CMAKE_CURRENT_SOURCE_DIR}/loader
-    ${CMAKE_CURRENT_SOURCE_DIR}/mcu
-    ${CMAKE_CURRENT_SOURCE_DIR}/mcu/avr
-    ${CMAKE_CURRENT_SOURCE_DIR}/mcu/peripherals
-)
+# Заголовки подключаются от корня core/: #include "cpu/AVR_CPU.h", "common/errors.h".
+# PUBLIC — чтобы те же пути видели C++-тесты и Python-модуль.
+target_include_directories(mcu_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 mcu_apply_warnings(mcu_core)
 mcu_apply_sanitizers(mcu_core)
 

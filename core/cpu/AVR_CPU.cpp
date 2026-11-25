@@ -2,10 +2,10 @@
 #include <stdexcept>
 #include <string>
 
-#include "../common/errors.h"
-#include "AVRExecutionContext.h"
-#include "AVR_CPU.h"
-#include "avr_instructions.h"
+#include "common/errors.h"
+#include "cpu/AVRExecutionContext.h"
+#include "cpu/AVR_CPU.h"
+#include "cpu/avr_instructions.h"
 
 namespace {
 // «Illegal AVR instruction 0x95D8 at word address 0x0057 (byte 0x00AE)»

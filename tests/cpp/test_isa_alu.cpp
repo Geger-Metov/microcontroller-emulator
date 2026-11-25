@@ -10,7 +10,7 @@ using namespace testutil;
 
 namespace {
 
-constexpr int C = 0, Z = 1, N = 2, V = 3, S = 4, H = 5;
+constexpr int C = 0, Z = 1, N = 2, V = 3, S = 4, H = 5, T = 6, I = 7;
 
 struct Result {
   uint8_t value = 0;

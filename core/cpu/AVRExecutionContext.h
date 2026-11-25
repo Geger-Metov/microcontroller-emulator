@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-#include "AVR_CPU.h"
-#include "Interfaces.h"
+#include "cpu/AVR_CPU.h"
+#include "interfaces/Interfaces.h"
 
 enum class SREGFlag : uint8_t { C, Z, N, V, S, H, T, I };
 

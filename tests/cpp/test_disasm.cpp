@@ -2,9 +2,9 @@
 // декодером/исполнителем по всем 65536 опкодам.
 #include <string>
 
-#include "../../core/cpu/avr_instructions.h"
-#include "../../core/decoder/avr_decoder.h"
-#include "../../core/disasm/avr_disasm.h"
+#include "cpu/avr_instructions.h"
+#include "decoder/avr_decoder.h"
+#include "disasm/avr_disasm.h"
 #include "test_framework.h"
 #include "test_util.h"
 

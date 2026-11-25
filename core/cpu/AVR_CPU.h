@@ -6,7 +6,7 @@
 #include <memory>
 #include <set>
 
-#include "Interfaces.h"
+#include "interfaces/Interfaces.h"
 
 // Чистое процессорное ядро
 /**

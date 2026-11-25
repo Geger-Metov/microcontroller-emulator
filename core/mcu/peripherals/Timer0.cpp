@@ -1,5 +1,5 @@
-#include "Timer0.h"
-#include "ATmega328P_Constants.h"
+#include "mcu/peripherals/Timer0.h"
+#include "mcu/avr/ATmega328P_Constants.h"
 
 namespace {
 // Индекс бита флага → вектор прерывания

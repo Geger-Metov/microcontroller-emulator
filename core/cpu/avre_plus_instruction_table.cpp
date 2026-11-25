@@ -1,5 +1,5 @@
-#include "avr_decode_helpers.h"
-#include "avr_instructions.h"
+#include "cpu/avr_instructions.h"
+#include "decoder/avr_decode_helpers.h"
 
 // Набор инструкций ATmega328P (AVRe+). Первое совпадение (mask/pattern)
 // выигрывает, но перекрытий между записями нет — порядок не важен.

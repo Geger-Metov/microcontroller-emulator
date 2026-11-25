@@ -5,8 +5,8 @@
 #include <memory>
 #include <vector>
 
-#include "ATmega328p.h"
-#include "Interfaces.h"
+#include "interfaces/Interfaces.h"
+#include "mcu/avr/ATmega328p.h"
 
 namespace testutil {
 

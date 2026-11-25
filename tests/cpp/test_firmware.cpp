@@ -3,8 +3,8 @@
 #include <memory>
 #include <string>
 
-#include "ATmega328p.h"
-#include "Interfaces.h"
+#include "interfaces/Interfaces.h"
+#include "mcu/avr/ATmega328p.h"
 #include "test_framework.h"
 
 #ifndef MCU_HEX_DIR

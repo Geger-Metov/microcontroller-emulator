@@ -2,7 +2,7 @@
 
 #include <set>
 
-#include "Interfaces.h"
+#include "interfaces/Interfaces.h"
 
 /**
  * Заглушка для ещё не реализованных регистров ввода-вывода.

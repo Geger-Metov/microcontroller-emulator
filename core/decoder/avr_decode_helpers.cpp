@@ -1,6 +1,6 @@
-#include "avr_decode_helpers.h"
-#include "AVRExecutionContext.h"
-#include "avr_instructions.h"
+#include "decoder/avr_decode_helpers.h"
+#include "cpu/AVRExecutionContext.h"
+#include "cpu/avr_instructions.h"
 
 void avr::decode_none(uint32_t, avr::DecodedInstruction &) {}
 

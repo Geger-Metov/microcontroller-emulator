@@ -1,9 +1,8 @@
-#include "hex_parser.h"
-
-#include "../common/errors.h"
-
 #include <cctype>
 #include <cstdio>
+
+#include "common/errors.h"
+#include "hex_parser/hex_parser.h"
 
 namespace {
 

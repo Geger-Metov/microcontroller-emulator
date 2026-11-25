@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "program_loader.h"
+#include "loader/program_loader.h"
 
 // Адреса областей в HEX-файле, который делает avr-objcopy (линейная адресация).
 constexpr uint32_t AVR_HEX_FLASH_BASE = 0x000000;

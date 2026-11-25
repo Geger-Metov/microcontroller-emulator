@@ -3,7 +3,7 @@
 #include <functional>
 #include <stdexcept>
 
-#include "Interfaces.h"
+#include "interfaces/Interfaces.h"
 
 class MMIORegister : public IMemoryMapped {
 public:

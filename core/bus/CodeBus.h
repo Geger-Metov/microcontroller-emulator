@@ -3,8 +3,8 @@
 #include <map>
 #include <stdexcept>
 
-#include "../common/errors.h"
-#include "Interfaces.h"
+#include "common/errors.h"
+#include "interfaces/Interfaces.h"
 
 class CodeBus : public ICodeBus {
 public:
