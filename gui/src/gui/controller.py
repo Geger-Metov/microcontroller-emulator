@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any, NamedTuple, Protocol
 
 from gui.disasm_model import Listing, load_listing
@@ -23,8 +23,10 @@ class EmulatorLike(Protocol):
     def get_cycle_count(self) -> int: ...
     def read_memory(self, addr: int) -> int: ...
     def read_memory_block(self, addr: int, length: int) -> bytes: ...
-    def snapshot(self) -> dict[str, Any]: ...
-    def disassemble(self, word_addr: int, count: int) -> list[dict[str, Any]]: ...
+    def snapshot(self) -> Mapping[str, Any]: ...  # TypedDict подходит под Mapping
+    def disassemble(
+        self, word_addr: int, count: int
+    ) -> Sequence[Mapping[str, Any]]: ...
 
 
 class PortRegisters(NamedTuple):
@@ -64,7 +66,7 @@ class SimController:
         if self._gui_callback:
             self._gui_callback()
 
-    def _guarded(self, action: str, fn: Callable[[], None]) -> bool:
+    def _guarded(self, action: str, fn: Callable[[], object]) -> bool:
         """Выполнить fn; при исключении запомнить ошибку и сообщить GUI."""
         try:
             fn()

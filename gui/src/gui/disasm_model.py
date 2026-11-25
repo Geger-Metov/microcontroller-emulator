@@ -5,7 +5,8 @@
 """
 
 from bisect import bisect_right
-from typing import NamedTuple, Protocol
+from collections.abc import Mapping, Sequence
+from typing import Any, NamedTuple, Protocol
 
 FLASH_WORDS = 0x4000  # ATmega328P: 32 КиБ = 16 К слов
 ERASED_WORD = 0xFFFF
@@ -29,7 +30,9 @@ class Instruction(NamedTuple):
 
 
 class DisassemblerLike(Protocol):
-    def disassemble(self, word_addr: int, count: int) -> list: ...
+    def disassemble(
+        self, word_addr: int, count: int
+    ) -> Sequence[Mapping[str, Any]]: ...
 
 
 class Listing:

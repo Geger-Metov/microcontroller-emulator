@@ -4,6 +4,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QTableWidget,
     QTableWidgetItem,
+    QWidget,
 )
 
 from gui.disasm_model import Listing, format_words
@@ -20,7 +21,7 @@ class DisassemblyWidget(QTableWidget):
 
     COLUMNS = ("Адрес", "Код", "Инструкция")
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(0, len(self.COLUMNS), parent)
         self.setHorizontalHeaderLabels(list(self.COLUMNS))
         self.verticalHeader().setVisible(False)
@@ -62,10 +63,9 @@ class DisassemblyWidget(QTableWidget):
         self._paint_row(self._current, None)
         self._paint_row(row, CURRENT_ROW_COLOR)
         self._current = row
-        if row is not None:
-            self.scrollToItem(
-                self.item(row, 0), QAbstractItemView.ScrollHint.EnsureVisible
-            )
+        item = self.item(row, 0) if row is not None else None
+        if item is not None:
+            self.scrollToItem(item, QAbstractItemView.ScrollHint.EnsureVisible)
 
     def current_row(self) -> int | None:
         return self._current
