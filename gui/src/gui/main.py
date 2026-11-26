@@ -558,8 +558,13 @@ class MainWindow(QMainWindow):
         )
 
 
-if __name__ == "__main__":
+def main() -> int:
+    """Entry point of the `gui` console script."""
     app = QApplication(sys.argv)
     win = MainWindow()
     win.show()
-    app.exec()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    sys.exit(main())
