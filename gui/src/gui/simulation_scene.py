@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QGraphicsScene
 
 from gui.chip_item import ChipItem
 from gui.interactive_items import ButtonItem, ConnectorItem, LEDItem, MovableItem
-from gui.pin_logic import led_states, output_levels
+from gui.pin_logic import button_levels, led_states, output_levels
 from gui.wire_item import WireItem
 
 
@@ -47,6 +47,7 @@ class SimulationScene(QGraphicsScene):
         btn = ButtonItem()
         btn.setPos(x, y)
         self.addItem(btn)
+        btn.toggled.connect(self.apply_buttons)
         print(f"[Scene] Button added at ({x}, {y})")
         return btn
 
@@ -79,6 +80,7 @@ class SimulationScene(QGraphicsScene):
                             wire = WireItem(self.first_connector, item)
                             self.addItem(wire)
                             self.wires.append(wire)
+                            self.apply_buttons()
                             print("[Scene] Wire created")
                         self.first_connector.setBrush(QBrush(Qt.GlobalColor.yellow))
                         self.first_connector = None
@@ -105,8 +107,8 @@ class SimulationScene(QGraphicsScene):
                     return (port_name, num)
         return None
 
-    def led_links(self):
-        """(chip pin, LED) pairs for all wires of the scene."""
+    def _wired_devices(self, device_type):
+        """(chip pin, device) pairs for the wires between a chip pin and a `device_type`."""
         links = []
         for wire in self.wires:
             for pin_conn, other in (
@@ -114,10 +116,25 @@ class SimulationScene(QGraphicsScene):
                 (wire.end_conn, wire.start_conn),
             ):
                 pin = self._pin_of(pin_conn)
-                if pin is not None and isinstance(other.owner, LEDItem):
+                if pin is not None and isinstance(other.owner, device_type):
                     links.append((pin, other.owner))
                     break
         return links
+
+    def led_links(self):
+        """(chip pin, LED) pairs for all wires of the scene."""
+        return self._wired_devices(LEDItem)
+
+    def button_links(self):
+        """(chip pin, pressed) pairs for every wire between a chip pin and a button."""
+        return [(pin, btn.pressed) for pin, btn in self._wired_devices(ButtonItem)]
+
+    def apply_buttons(self, *_args):
+        """Drive the MCU pins that have buttons wired to them."""
+        if not self.controller:
+            return
+        for (port, bit), level in button_levels(self.button_links()).items():
+            self.controller.set_pin_level(port, bit, level)
 
     def refresh_pins(self):
         """Update the chip pin colors and the state of the connected peripherals."""
@@ -134,7 +151,6 @@ class SimulationScene(QGraphicsScene):
         outputs = output_levels({"B": (b.ddr, b.port), "D": (d.ddr, d.port)})
         for led, on in led_states(self.led_links(), outputs).items():
             led.set_state(on)
-        # Other devices (for example a button) are not driven yet.
 
         # Update the wire positions (in case items were moved)
         for w in self.wires:

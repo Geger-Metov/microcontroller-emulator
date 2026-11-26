@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <string>
 
 #include "bus/BasicMemoryDevices.h"
 #include "facade/EmulatorFacade.h"
@@ -184,4 +185,19 @@ void EmulatorFacade::load_flash_bytes(uint32_t offset, const uint8_t *data,
   if (!flash_dev_)
     throw std::runtime_error("Flash device not set");
   flash_dev_->load_image(offset, data, len);
+}
+
+void EmulatorFacade::add_pin_port(char name, IPinInput *port) {
+  if (port)
+    pin_ports_[name] = port;
+}
+
+void EmulatorFacade::set_pin_level(char port, uint8_t bit, PinLevel level) {
+  const auto it = pin_ports_.find(port);
+  if (it == pin_ports_.end())
+    throw std::invalid_argument(std::string("No such port: '") + port + "'");
+  if (bit > 7)
+    throw std::invalid_argument("Pin number must be 0..7, got " +
+                                std::to_string(bit));
+  it->second->set_external_level(bit, level);
 }

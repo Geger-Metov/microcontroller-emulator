@@ -42,7 +42,7 @@ flowchart TB
 | `decoder/`                | `AVRDecoder` (a lookup over the 16-bit opcode) and `decode_*` — operand decoding                                                                                                                                              |
 | `bus/`                    | `MemoryBus` (address range → device, ticks peripherals), `CodeBus`, `FlashDevice`, `SRAMDevice`                                                                                                                               |
 | `mcu/avr/`                | `ATmega328P` (MCU assembly), constants (vectors), `AVR_GPIO`                                                                                                                                                                  |
-| `mcu/peripherals/`        | `Timer0`, `MMIORegister`, `UnimplementedIODevice`, the register file, SREG, SP, `Wire`                                                                                                                                        |
+| `mcu/peripherals/`        | `Timer0`, `MMIORegister`, `UnimplementedIODevice`, the register file, SREG, SP                                                                                                                                                |
 | `hex_parser/`, `loader/`  | Intel HEX → `HexImage` → `ProgramImage` (flash/EEPROM)                                                                                                                                                                        |
 | `facade/`                 | `EmulatorFacade`                                                                                                                                                                                                              |
 | `bindings/`               | the pybind11 module `emulator_backend`                                                                                                                                                                                        |
@@ -140,7 +140,9 @@ Type stubs: `gui/stubs/emulator_backend.pyi`.
 - `sim_view.py` — Load/Step/Run/Reset buttons; Run executes batches of cycles by the MCU clock (`run_pacing.py`).
 - `simulation_scene.py` — the graphics scene: the chip (`chip_item.py`), the LED and button
   (`interactive_items.py`), wires (`wire_item.py`). Pin state is read from `DDRx/PORTx`; an LED lights up when
-  connected to an output pin that is high. The button does not affect the emulator yet (see [status.md](status.md)).
+  connected to an output pin that is high. A button wired to a chip pin
+  pulls it to ground while held (`Emulator.set_pin_level(port, bit, "low" | "floating")`); `PINx` then reads
+  0, or 1 through the pull-up when it is released.
 - `controller.py` — a thin wrapper over `emulator_backend.Emulator` (state via `snapshot()`, ports via one
   `read_memory_block`).
 - `disasm_model.py` (`Listing`, finding a row by PC) and `disasm_widget.py` — the disassembly window.

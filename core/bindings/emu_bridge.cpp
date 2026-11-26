@@ -3,6 +3,8 @@
 #include <pybind11/functional.h> // in case callbacks are needed
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h> // for std::vector ↔ list
+#include <stdexcept>
+#include <string>
 
 #include "common/errors.h"
 #include "disasm/avr_disasm.h"
@@ -97,6 +99,31 @@ public:
   void write_memory(uint32_t addr, uint8_t value) {
     check_idle();
     facade_->write_data(addr, value, 1);
+  }
+
+  // Drive an I/O pin from outside: port "B"/"D", bit 0..7,
+  // level "low" / "high" / "floating" (nothing connected). ValueError on bad
+  // arguments.
+  void set_pin_level(const std::string &port, int bit,
+                     const std::string &level) {
+    check_idle();
+    if (port.size() != 1)
+      throw std::invalid_argument("Port must be one letter, got '" + port +
+                                  "'");
+    if (bit < 0 || bit > 7)
+      throw std::invalid_argument("Pin number must be 0..7, got " +
+                                  std::to_string(bit));
+    PinLevel lv;
+    if (level == "low")
+      lv = PinLevel::Low;
+    else if (level == "high")
+      lv = PinLevel::High;
+    else if (level == "floating")
+      lv = PinLevel::Floating;
+    else
+      throw std::invalid_argument(
+          "Level must be 'low', 'high' or 'floating', got '" + level + "'");
+    facade_->set_pin_level(port[0], static_cast<uint8_t>(bit), lv);
   }
 
   // A block of data memory as bytes (consecutive addresses; unmapped → error).
@@ -245,6 +272,11 @@ PYBIND11_MODULE(emulator_backend, m) {
            "Read a byte from data memory")
       .def("write_memory", &EmulatorWrapper::write_memory,
            "Write a byte to data memory")
+      .def("set_pin_level", &EmulatorWrapper::set_pin_level, py::arg("port"),
+           py::arg("bit"), py::arg("level"),
+           "Drive an I/O pin from outside: level is 'low', 'high' or "
+           "'floating' (a button to ground: pressed = 'low', released = "
+           "'floating')")
       .def("read_memory_block", &EmulatorWrapper::read_memory_block,
            py::arg("addr"), py::arg("length"),
            "Read `length` bytes of data memory as bytes")

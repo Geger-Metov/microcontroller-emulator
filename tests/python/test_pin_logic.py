@@ -1,4 +1,4 @@
-from gui.pin_logic import bit, led_states, output_levels, pin_kind
+from gui.pin_logic import bit, button_levels, led_states, output_levels, pin_kind
 
 
 def test_bit_extracts_single_bit():
@@ -43,3 +43,18 @@ def test_led_with_several_wires_is_on_if_any_pin_high():
     # the order of wires must not matter
     states = led_states([(("B", 1), "led"), (("B", 0), "led")], outputs)
     assert states == {"led": True}
+
+
+def test_button_levels_pressed_pulls_low_released_floats():
+    links = [(("D", 2), True), (("B", 0), False)]
+    assert button_levels(links) == {("D", 2): "low", ("B", 0): "floating"}
+
+
+def test_button_levels_any_pressed_button_wins_on_a_shared_pin():
+    pin = ("D", 3)
+    assert button_levels([(pin, False), (pin, True)]) == {pin: "low"}
+    assert button_levels([(pin, True), (pin, False)]) == {pin: "low"}
+
+
+def test_button_levels_without_buttons_is_empty():
+    assert button_levels([]) == {}

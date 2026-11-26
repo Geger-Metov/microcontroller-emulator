@@ -23,20 +23,20 @@ Updated: 2026-11-25.
 
 ## Not implemented / limitations
 
-| What                                                   | Note                                                                                               |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `SPM`                                                  | executes as a NOP (writing to flash is not modeled)                                                |
-| `WDR`, `BREAK`                                         | NOP; the watchdog is not modeled                                                                   |
-| Timer0: OC0A/OC0B pins, FOC0x, external clock input T0 | COM0xx bits are stored but pins do not change; CS=110/111 → the timer stands still                 |
-| UART, ADC, SPI, TWI, Timer1/2, EEPROM                  | registers read as 0, writes are ignored                                                            |
-| GPIO inputs (`PINx`) and the button                    | `Wire` exists but is not connected to GPIO; `PINx` is always 0, writing `PINx` (toggle) is missing |
-| Sleep modes                                            | any `SLEEP` = Idle (peripherals keep running)                                                      |
-| Data access ≥ 0x900                                    | throws an exception (the GUI reports it)                                                           |
+| What                                                   | Note                                                                                              |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `SPM`                                                  | executes as a NOP (writing to flash is not modeled)                                               |
+| `WDR`, `BREAK`                                         | NOP; the watchdog is not modeled                                                                  |
+| Timer0: OC0A/OC0B pins, FOC0x, external clock input T0 | COM0xx bits are stored but pins do not change; CS=110/111 → the timer stands still                |
+| UART, ADC, SPI, TWI, Timer1/2, EEPROM                  | registers read as 0, writes are ignored                                                           |
+| GPIO input timing                                      | the PINx synchronizer delay (~1 cycle) is not modeled; no pin-change interrupts (INT0/INT1/PCINT) |
+| Sleep modes                                            | any `SLEEP` = Idle (peripherals keep running)                                                     |
+| Data access ≥ 0x900                                    | throws an exception (the GUI reports it)                                                          |
 
 ## Open issues
 
-- **GPIO input**: `PINx` for output pins without a connected wire reads 0 (on real hardware it is the pin level);
-  writing 1 to `PINx` (toggle `PORTx`) is not implemented; `Wire` is not exposed to Python.
+- **GPIO input**: a button can pull a pin low, but there are no pin-change or external interrupts yet, and
+  the only external sources are "low", "high" and "floating" (no analog levels, no pin-to-pin wires).
 - **Debugging**: no breakpoints; PC/memory change events are not exported to Python.
 - **Memory**: unknown-register accesses are silently stored but not logged; the bus uses a `std::map`
   (a flat table would be faster); `FlashDevice::erase_page/write_page` are declared but not defined.

@@ -212,6 +212,61 @@ def test_pin_labels_name_the_right_port(view):
     ]
 
 
+# ---- Button -------------------------------------------------------------------
+
+
+def connect_pin_to_button(view, port, pin):
+    view.show_chip()
+    btn = view.chip_scene.add_button()
+    connectors = (
+        view.chip_scene.chip_item.pin_connectors_B
+        if port == "B"
+        else view.chip_scene.chip_item.pin_connectors_D
+    )
+    wire = WireItem(connectors[pin], btn.conn1)
+    view.chip_scene.addItem(wire)
+    view.chip_scene.wires.append(wire)
+    view.chip_scene.apply_buttons()
+    return btn
+
+
+def test_button_pulls_its_pin_low_while_pressed(view, fake_emu):
+    btn = connect_pin_to_button(view, "D", 2)
+    assert fake_emu.pin_levels[("D", 2)] == "floating"  # released
+
+    btn.set_pressed(True)
+    assert fake_emu.pin_levels[("D", 2)] == "low"
+
+    btn.set_pressed(False)
+    assert fake_emu.pin_levels[("D", 2)] == "floating"
+
+
+def test_button_mouse_press_and_release(view, fake_emu):
+    from PySide6.QtCore import QEvent
+    from PySide6.QtWidgets import QGraphicsSceneMouseEvent
+
+    btn = connect_pin_to_button(view, "B", 1)
+
+    press = QGraphicsSceneMouseEvent(QEvent.Type.GraphicsSceneMousePress)
+    press.setButton(Qt.MouseButton.LeftButton)
+    btn.mousePressEvent(press)
+    assert btn.pressed
+    assert fake_emu.pin_levels[("B", 1)] == "low"
+
+    release = QGraphicsSceneMouseEvent(QEvent.Type.GraphicsSceneMouseRelease)
+    release.setButton(Qt.MouseButton.LeftButton)
+    btn.mouseReleaseEvent(release)
+    assert not btn.pressed
+    assert fake_emu.pin_levels[("B", 1)] == "floating"
+
+
+def test_button_not_wired_to_a_pin_does_not_touch_the_emulator(view, fake_emu):
+    view.show_chip()
+    btn = view.chip_scene.add_button()
+    btn.set_pressed(True)
+    assert fake_emu.pin_levels == {}
+
+
 # ---- Disassembler ------------------------------------------------------------
 
 

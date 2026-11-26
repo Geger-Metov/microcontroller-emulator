@@ -50,6 +50,10 @@ std::unique_ptr<IEmulatorFacade> ATmega328P::create() {
   facade->add_memory_device(std::move(ctx->sp_device));
   facade->add_memory_device(std::move(ctx->io_fallback));
 
+  // Ports whose pins the outside world (the GUI) can drive.
+  facade->add_pin_port('B', gpioB);
+  facade->add_pin_port('D', gpioD);
+
   // Data-space map (for the debugger/GUI); bounds are inclusive.
   facade->add_memory_region("Registers", 0x0000, 0x001F, true, true);
   facade->add_memory_region("I/O", 0x0020, 0x00FF, true, true);

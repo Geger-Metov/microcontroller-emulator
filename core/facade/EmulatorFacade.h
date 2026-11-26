@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <map>
 #include <memory>
 
 #include "interfaces/Interfaces.h"
@@ -25,6 +26,9 @@ public:
   void add_memory_region(const std::string &name, uint32_t start, uint32_t end,
                          bool readable, bool writable);
 
+  // Register a port that can be driven from outside; does not own it.
+  void add_pin_port(char name, IPinInput *port);
+
   // IDebuggable
   uint64_t read_data(uint32_t addr, uint8_t size) const override;
   void write_data(uint32_t addr, uint64_t value, uint8_t size) override;
@@ -48,6 +52,7 @@ public:
 
   void load_flash_bytes(uint32_t offset, const uint8_t *data,
                         size_t len) override;
+  void set_pin_level(char port, uint8_t bit, PinLevel level) override;
 
   // accessors
   uint32_t get_pc() const override { return cpu_ ? cpu_->get_pc() : 0; }
@@ -62,6 +67,7 @@ private:
   std::unique_ptr<IDataBus> data_bus_;
   std::unique_ptr<ICodeBus> code_bus_;
   FlashDevice *flash_dev_ = nullptr;
+  std::map<char, IPinInput *> pin_ports_; // not owned
   std::vector<std::unique_ptr<IMemoryMapped>>
       memory_devices_;                       // we own the memory
   std::vector<IResettable *> reset_devices_; // devices that support

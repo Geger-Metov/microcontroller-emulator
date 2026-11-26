@@ -47,6 +47,19 @@ public:
   virtual void tick(uint64_t cycles) = 0;
 };
 
+// The level that the outside world applies to an I/O pin.
+//   Floating — nothing is connected (or a button is released): the pin follows
+//              its internal pull-up (PORTx) and otherwise reads as 0.
+//   Low/High — the pin is driven externally (for example a button to ground).
+enum class PinLevel { Floating, Low, High };
+
+// A port whose pins can be driven from outside (implemented by GPIO).
+class IPinInput {
+public:
+  virtual ~IPinInput() = default;
+  virtual void set_external_level(uint8_t bit, PinLevel level) = 0;
+};
+
 // A device whose state can be returned to the state after a power-on reset
 class IResettable {
 public:
@@ -121,6 +134,12 @@ public:
   virtual void stop() = 0;             // same as pause() (no separate state)
   virtual bool is_running() const = 0; // is run_for_cycles() in progress
   virtual uint64_t get_cycle_count() const = 0;
+
+  // Drive an I/O pin from outside (a button, a signal source). `port` is the
+  // port letter ('B', 'D'); throws std::invalid_argument for an unknown port
+  // or a bit above 7. The level stays until it is changed again, also across
+  // reset().
+  virtual void set_pin_level(char port, uint8_t bit, PinLevel level) = 0;
 
   // GUI callbacks
   using PCCallback = std::function<void(uint32_t)>;

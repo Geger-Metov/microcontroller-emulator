@@ -19,6 +19,8 @@ constexpr uint32_t OCR0A = 0x47;
 constexpr uint32_t OCR0B = 0x48;
 constexpr uint32_t TIMSK0 = 0x6E;
 constexpr uint32_t SREG = 0x5F;
+constexpr uint32_t PINB = 0x23, DDRB = 0x24, PORTB = 0x25;
+constexpr uint32_t PIND = 0x29, DDRD = 0x2A, PORTD = 0x2B;
 
 struct Chunk {
   uint32_t word_addr;
@@ -40,6 +42,10 @@ inline uint16_t ldi(int rd, int k) {
 }
 inline uint16_t out(int io, int rr) {
   return 0xB800 | ((io & 0x30) << 5) | ((rr & 0x10) << 4) | ((rr & 0x0F) << 4) |
+         (io & 0x0F);
+}
+inline uint16_t in(int rd, int io) {
+  return 0xB000 | ((io & 0x30) << 5) | ((rd & 0x10) << 4) | ((rd & 0x0F) << 4) |
          (io & 0x0F);
 }
 inline uint16_t inc(int rd) { return 0x9403 | (rd << 4); }

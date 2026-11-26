@@ -205,3 +205,48 @@ def test_disassemble_listing_loads_through_the_model(emu):
     assert 0 < len(listing) < 400  # the 0xFFFF tail is dropped
     assert listing.rows[0].text == "jmp 0x0068"
     assert listing.row_for_pc(0x34) is not None  # the start of main (byte 0x68)
+
+
+# ---- GPIO input: a button wired to a pin -------------------------------------
+
+
+def test_pin_levels_reach_pin_registers_and_toggle_works():
+    backend = pytest.importorskip("emulator_backend")
+    emu = backend.Emulator()
+    PINB, PORTB, PIND = 0x23, 0x25, 0x29
+
+    emu.write_memory(PORTB, 0x04)  # pull-up on PB2
+    assert emu.read_memory(PINB) == 0x04
+    emu.set_pin_level("B", 2, "low")
+    assert emu.read_memory(PINB) == 0x00
+    emu.set_pin_level("B", 2, "floating")
+    assert emu.read_memory(PINB) == 0x04
+    emu.set_pin_level("D", 7, "high")
+    assert emu.read_memory(PIND) == 0x80
+
+    emu.write_memory(PINB, 0x01)  # writing 1 to PINx toggles PORTx
+    assert emu.read_memory(PORTB) == 0x05
+
+
+def test_set_pin_level_rejects_bad_arguments():
+    backend = pytest.importorskip("emulator_backend")
+    emu = backend.Emulator()
+    for args in (("C", 0, "low"), ("B", 8, "low"), ("B", -1, "low"), ("B", 0, "mid")):
+        with pytest.raises(ValueError):
+            emu.set_pin_level(*args)
+
+
+def test_button_firmware_lights_the_led_only_while_pressed(hex_dir):
+    backend = pytest.importorskip("emulator_backend")
+    emu = backend.Emulator()
+    emu.load_hex(str(hex_dir / "button_led.hex"))
+    PORTB = 0x25
+
+    emu.run(100)
+    assert emu.read_memory(PORTB) & 0x20 == 0
+    emu.set_pin_level("D", 2, "low")
+    emu.run(100)
+    assert emu.read_memory(PORTB) & 0x20 == 0x20
+    emu.set_pin_level("D", 2, "floating")
+    emu.run(100)
+    assert emu.read_memory(PORTB) & 0x20 == 0

@@ -55,6 +55,14 @@ The code needs C++20 (designated initializers); C++23 adds nothing significant. 
 `debug` (ASan+UBSan, `-g3 -O0`), `release` (`-O2`), `release-python` (+ the module for the GUI).
 `CMakeUserPresets.json` is personal (absolute paths) and is not committed.
 
+### GPIO input: external levels, not a wire network
+
+A pin is either an output (it shows `PORTx`) or an input. An input reads the level that the outside world
+applies (`PinLevel`: low / high / floating); a floating input reads the pull-up (`PORTx`), else 0. Writing 1
+to `PINx` toggles `PORTx`. The outside level is set through `IDebuggable::set_pin_level` and survives `reset()`.
+Rejected: a `Wire` object with several drivers per net — it was never connected to anything and would be needed
+only for pin-to-pin circuits (it was removed). The synchronizer delay of `PINx` is not modeled.
+
 ### Stopping `run()` and the "busy" state
 
 `pause()`/`stop()` set an atomic flag checked between instructions; the flag is cleared at the start of every

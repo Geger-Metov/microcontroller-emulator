@@ -73,3 +73,18 @@ TEST(reset_returns_pc_to_zero) {
   emu->reset();
   CHECK_EQ(emu->get_pc(), 0u);
 }
+
+// A button on PD2 (pull-up, pressed = low) lights the LED on PB5.
+TEST(button_firmware_lights_the_led_only_while_pressed) {
+  auto emu = load_firmware("button_led.hex");
+  emu->run_for_cycles(100);
+  CHECK_EQ(emu->read_data(PORTB, 1) & PB5, 0u); // released: LED off
+
+  emu->set_pin_level('D', 2, PinLevel::Low); // pressed
+  emu->run_for_cycles(100);
+  CHECK_EQ(emu->read_data(PORTB, 1) & PB5, static_cast<uint64_t>(PB5));
+
+  emu->set_pin_level('D', 2, PinLevel::Floating); // released
+  emu->run_for_cycles(100);
+  CHECK_EQ(emu->read_data(PORTB, 1) & PB5, 0u);
+}

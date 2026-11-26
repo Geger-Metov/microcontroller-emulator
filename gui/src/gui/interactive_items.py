@@ -1,4 +1,4 @@
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QPen
 from PySide6.QtWidgets import (
     QGraphicsEllipseItem,
@@ -60,6 +60,13 @@ class LEDItem(MovableItem):
 
 
 class ButtonItem(MovableItem):
+    """A push button: held while the left mouse button is down (Ctrl+drag moves it).
+
+    It connects a pin to ground, so `toggled(True)` means the pin is pulled low.
+    """
+
+    toggled = Signal(bool)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.body = QGraphicsRectItem(QRectF(-12, -12, 24, 24), self)
@@ -70,12 +77,31 @@ class ButtonItem(MovableItem):
         self.conn1 = self.add_connector(QPointF(-8, -12))
         self.conn2 = self.add_connector(QPointF(8, -12))
         self.pressed = False
+        self.setToolTip("Hold the left mouse button to press; Ctrl+drag to move")
 
     def set_pressed(self, pressed: bool):
+        changed = pressed != self.pressed
         self.pressed = pressed
         self.body.setBrush(
             QBrush(QColor(100, 100, 100) if pressed else QColor(180, 180, 180))
         )
+        if changed:
+            self.toggled.emit(pressed)
+
+    def mousePressEvent(self, event):
+        ctrl = bool(event.modifiers() & Qt.KeyboardModifier.ControlModifier)
+        if event.button() == Qt.MouseButton.LeftButton and not ctrl:
+            self.set_pressed(True)
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        if self.pressed:
+            self.set_pressed(False)
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
 
     def boundingRect(self):
         return QRectF(-15, -15, 30, 35)

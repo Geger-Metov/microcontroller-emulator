@@ -33,6 +33,7 @@ class FakeEmulator:
         self.program: list[dict] = []
         self.runs: list[int] = []  # sizes of the batches passed to run()
         self.fail_load: Exception | None = None
+        self.pin_levels: dict[tuple[str, int], str] = {}  # set_pin_level() calls
 
     def step(self) -> None:
         if self.fail_step:
@@ -77,6 +78,9 @@ class FakeEmulator:
 
     def read_memory_block(self, addr: int, length: int) -> bytes:
         return bytes(self.memory.get(addr + i, 0) for i in range(length))
+
+    def set_pin_level(self, port: str, bit: int, level: str) -> None:
+        self.pin_levels[(port, bit)] = level
 
     def disassemble(self, word_addr: int, count: int) -> list[dict]:
         rows = self.program[word_addr:]

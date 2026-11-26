@@ -6,6 +6,8 @@ from typing import Literal
 # An MCU pin: ("B", 5) is PB5, ("D", 2) is PD2.
 PinKey = tuple[str, int]
 
+PinLevelName = Literal["low", "high", "floating"]
+
 PinKind = Literal["output_high", "output_low", "input_pullup", "input"]
 
 
@@ -51,3 +53,22 @@ def led_states[T: Hashable](
         if pin in outputs:
             states[led] = states.get(led, False) or outputs[pin] == 1
     return states
+
+
+def button_levels(
+    links: Iterable[tuple[PinKey, bool]],
+) -> dict[PinKey, PinLevelName]:
+    """External levels that buttons apply to MCU pins.
+
+    links: (pin, pressed) pairs, one per wire. A button connects the pin to ground, so
+    a pressed button pulls the pin "low" and a released one leaves it "floating"
+    (the internal pull-up, if enabled, then reads as 1). If several buttons are on
+    one pin, it is low when any of them is pressed.
+    """
+    levels: dict[PinKey, PinLevelName] = {}
+    for pin, pressed in links:
+        if pressed:
+            levels[pin] = "low"
+        else:
+            levels.setdefault(pin, "floating")
+    return levels

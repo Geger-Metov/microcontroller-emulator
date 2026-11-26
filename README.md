@@ -8,12 +8,12 @@ Python module `emulator_backend` (pybind11) imported by the GUI.
 
 ## Requirements
 
-| What                             | Version                       | Why                                    |
-| -------------------------------- | ----------------------------- | -------------------------------------- |
-| CMake                            | ≥ 3.21 (presets)              | build                                  |
-| Compiler                         | GCC ≥ 11 / Clang ≥ 14 (C++20) | core; the `-g3` flags assume GCC/Clang |
-| [uv](https://docs.astral.sh/uv/) | any recent version            | GUI environment (`gui/.venv`)          |
-| Python                           | see `gui/.python-version`     | GUI and the `emulator_backend` module  |
+| What                             | Version                       | Why                                         |
+| -------------------------------- | ----------------------------- | ------------------------------------------- |
+| CMake                            | ≥ 3.21 (presets)              | build                                       |
+| Compiler                         | GCC ≥ 11 / Clang ≥ 14 (C++20) | core; the `-g3` flags assume GCC/Clang      |
+| [uv](https://docs.astral.sh/uv/) | any recent version            | GUI environment (`gui/.venv`)               |
+| Python                           | see `gui/.python-version`     | GUI and the `emulator_backend` module       |
 
 ## Quick start: build everything and run
 
@@ -103,11 +103,11 @@ cmake --preset release && cmake --build --preset release && ctest --preset relea
 
 ## CMake presets and options
 
-| Preset           | What it does                                              |
-| ---------------- | --------------------------------------------------------- |
-| `debug`          | `-g3 -O0`, ASan+UBSan, warnings as errors, no Python      |
-| `release`        | `-O2`, warnings as errors, no Python                      |
-| `release-python` | `-O2` + the `emulator_backend` module (requires pybind11) |
+| Preset           | What it does                                                    |
+| ---------------- | --------------------------------------------------------------- |
+| `debug`          | `-g3 -O0`, ASan+UBSan, warnings as errors, no Python            |
+| `release`        | `-O2`, warnings as errors, no Python                            |
+| `release-python` | `-O2` + the `emulator_backend` module (requires pybind11)       |
 
 Options: `MCU_BUILD_PYTHON` (the `emulator_backend` module, requires pybind11), `MCU_BUILD_TESTS`
 (ON by default), `MCU_SANITIZE` (OFF), `MCU_WARNINGS_AS_ERRORS` (OFF).
@@ -130,6 +130,10 @@ Run step 2 of the quick start first, then restart the language server.
 ## Documentation
 
 See [docs/](docs/README.md): architecture, recipes, status, decision log, glossary.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 

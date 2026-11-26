@@ -131,3 +131,17 @@ def test_get_listing_does_not_trigger_gui_update(controller, fake_emu):
     controller.set_gui_callback(lambda: calls.append(1))
     controller.get_listing()
     assert calls == []
+
+
+def test_set_pin_level_goes_to_the_emulator(controller, fake_emu):
+    assert controller.set_pin_level("D", 2, "low") is True
+    assert fake_emu.pin_levels[("D", 2)] == "low"
+
+
+def test_set_pin_level_reports_errors(controller, fake_emu, monkeypatch):
+    def boom(port, bit, level):
+        raise ValueError("Pin number must be 0..7")
+
+    monkeypatch.setattr(fake_emu, "set_pin_level", boom)
+    assert controller.set_pin_level("B", 9, "low") is False
+    assert "Pin number" in controller.last_error

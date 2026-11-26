@@ -3,6 +3,7 @@ add_executable(mcu_tests
     test_decoder.cpp
     test_disasm.cpp
     test_firmware.cpp
+    test_gpio.cpp
     test_hex_parser.cpp
     test_isa.cpp
     test_isa_alu.cpp

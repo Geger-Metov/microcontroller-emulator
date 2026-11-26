@@ -24,6 +24,7 @@ class EmulatorLike(Protocol):
     def get_registers(self) -> list[int]: ...
     def get_cycle_count(self) -> int: ...
     def read_memory(self, addr: int) -> int: ...
+    def set_pin_level(self, port: str, bit: int, level: str) -> None: ...
     def read_memory_block(self, addr: int, length: int) -> bytes: ...
     def snapshot(self) -> Mapping[str, Any]: ...  # a TypedDict fits a Mapping
     def disassemble(
@@ -124,6 +125,13 @@ class SimController:
             "regs": snap["registers"],
             "cycles": snap["cycles"],
         }
+
+    def set_pin_level(self, port: str, bit: int, level: str) -> bool:
+        """Drive an MCU pin from outside ("low" / "high" / "floating"). False on error."""
+        return self._guarded(
+            "Failed to set the pin level",
+            lambda: self.emu.set_pin_level(port, bit, level),
+        )
 
     def get_port_registers(self) -> dict[str, PortRegisters]:
         """PIN/DDR/PORT of ports B and D."""
