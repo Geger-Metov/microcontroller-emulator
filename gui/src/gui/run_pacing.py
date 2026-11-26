@@ -1,21 +1,21 @@
-"""Сколько тактов выполнять за кадр, чтобы эмулятор шёл в реальном времени.
+"""How many cycles to execute per frame so that the emulator runs in real time.
 
-Чистая логика без Qt: время передаётся параметром, поэтому проверяется тестами
-без таймеров.
+Pure logic without Qt: the time is passed in as a parameter, so it is tested
+without timers.
 """
 
-DEFAULT_CLOCK_HZ = 16_000_000  # ATmega328P на плате Arduino Uno
+DEFAULT_CLOCK_HZ = 16_000_000  # ATmega328P on an Arduino Uno board
 
 
 class RunPacer:
-    """Переводит прошедшее реальное время в число тактов МК.
+    """Converts elapsed real time into a number of MCU cycles.
 
-    * `speed` — множитель (0.1 = в десять раз медленнее реального времени).
-    * `max_frame_s` — потолок времени, засчитываемого за один кадр. Если GUI
-      «подвис» или ядро не успевает, эмуляция просто идёт медленнее, а не
-      пытается нагнать упущенное и не зависает окончательно.
-    * Дробная часть такта переносится на следующий кадр, поэтому на
-      длинной дистанции средняя скорость точная.
+    ~* `speed` — a multiplier (0.1 = ten times slower than real time).
+    ~* `max_frame_s` — a cap on the time counted for one frame. If the GUI
+      ~  stalls or the core cannot keep up, the emulation simply runs slower instead of
+      ~  trying to catch up and freezing for good.
+    ~* The fractional part of a cycle carries over to the next frame, so over
+      ~  a long run the average speed is exact.
     """
 
     def __init__(
@@ -31,19 +31,19 @@ class RunPacer:
         self._carry = 0.0
 
     def start(self, now: float) -> None:
-        """Начать отсчёт с момента `now` (секунды, монотонные часы)."""
+        """Start counting from `now` (seconds, a monotonic clock)."""
         self._last = now
         self._carry = 0.0
 
     def cycles_since_last(self, now: float) -> int:
-        """Такты, которые нужно выполнить с прошлого вызова до `now`."""
+        """The cycles to execute from the previous call up to `now`."""
         if self._last is None:
             self.start(now)
             return 0
         dt = min(max(now - self._last, 0.0), self.max_frame_s)
         self._last = now
         self._carry += dt * self.clock_hz * self.speed
-        # 1e-6 такта — защита от ошибки float (0.016 * 1e6 = 15999.99999…)
+        # 1e-6 of a cycle guards against float error (0.016 * 1e6 = 15999.99999…)
         cycles = int(self._carry + 1e-6)
         self._carry -= cycles
         return cycles

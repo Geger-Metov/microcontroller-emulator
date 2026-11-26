@@ -1,12 +1,12 @@
-"""Тесты виджетов (pytest-qt, без экрана: QT_QPA_PLATFORM=offscreen).
+"""Widget tests (pytest-qt, no display: QT_QPA_PLATFORM=offscreen).
 
-Эмулятор подставной (FakeEmulator): проверяем именно поведение GUI.
+The emulator is a fake (FakeEmulator): we test the GUI behavior itself.
 """
 
 import pytest
 
-pytest.importorskip("PySide6", reason="PySide6 не установлен")
-pytest.importorskip("pytestqt", reason="pytest-qt не установлен")
+pytest.importorskip("PySide6", reason="PySide6 is not installed")
+pytest.importorskip("pytestqt", reason="pytest-qt is not installed")
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -23,14 +23,14 @@ GRAY = QColor(Qt.GlobalColor.gray)
 def view(qtbot, controller, monkeypatch):
     v = SimulatorView(controller)
     qtbot.addWidget(v)
-    # Модальный диалог в тесте повис бы навсегда — запоминаем сообщения вместо него.
+    # A modal dialog would hang the test forever — we record messages instead of it.
     v.shown_errors = []
     monkeypatch.setattr(v, "show_error", v.shown_errors.append)
     return v
 
 
 def connect_pin_to_led(view, port, pin):
-    """Чип + светодиод + провод от пина к светодиоду; возвращает светодиод."""
+    """A chip + an LED + a wire from a pin to the LED; returns the LED."""
     view.show_chip()
     led = view.chip_scene.add_led()
     connectors = (
@@ -65,7 +65,7 @@ def test_run_button_toggles_timer_and_label(qtbot, view):
 
 
 class FakeClock:
-    """Управляемое время: тест сам решает, сколько секунд «прошло»."""
+    """Controlled time: the test decides how many seconds have "passed"."""
 
     def __init__(self):
         self.t = 100.0
@@ -78,16 +78,16 @@ def test_run_executes_cycles_in_batches_by_clock_frequency(view, fake_emu):
     clock = FakeClock()
     view._now = clock
     view.controller.clock_hz = 1_000_000
-    view._on_run()  # старт: отсчёт времени с t=100
+    view._on_run()  # start: counting time from t=100
 
-    clock.t += 0.016  # прошло 16 мс
+    clock.t += 0.016  # 16 ms passed
     view._timer_tick()
-    assert fake_emu.runs == [16_000]  # 1 МГц * 0.016 с
+    assert fake_emu.runs == [16_000]  # 1 MHz * 0.016 s
 
     clock.t += 0.05
     view._timer_tick()
     assert fake_emu.runs == [16_000, 50_000]
-    view._on_run()  # стоп
+    view._on_run()  # stop
 
 
 def test_run_speed_selector_scales_batches(view, fake_emu):
@@ -128,10 +128,10 @@ def test_emulator_error_stops_run_and_is_shown(qtbot, view, fake_emu):
     qtbot.waitUntil(lambda: bool(view.shown_errors), timeout=2000)
 
     assert "Illegal AVR instruction" in view.shown_errors[0]
-    assert not view.timer.isActive()  # автозапуск остановлен
+    assert not view.timer.isActive()  # auto-run stopped
     assert view.btn_run.text() == "Run"
     qtbot.wait(200)
-    assert len(view.shown_errors) == 1  # сообщение одно, а не по каждому тику
+    assert len(view.shown_errors) == 1  # one message, not one per tick
 
 
 def test_update_callback_is_called_after_successful_step(qtbot, view):
@@ -172,7 +172,7 @@ def test_led_off_when_pin_is_output_low(view, fake_emu):
 
 def test_led_ignores_input_pin(view, fake_emu):
     led = connect_pin_to_led(view, "B", 5)
-    fake_emu.memory.update({DDRB: 0x00, PORTB: 0x20})  # вход с подтяжкой
+    fake_emu.memory.update({DDRB: 0x00, PORTB: 0x20})  # an input with a pull-up
 
     view.chip_scene.refresh_pins()
 
@@ -212,7 +212,7 @@ def test_pin_labels_name_the_right_port(view):
     ]
 
 
-# ---- Дизассемблер ------------------------------------------------------------
+# ---- Disassembler ------------------------------------------------------------
 
 
 @pytest.fixture
@@ -241,7 +241,7 @@ def test_disasm_widget_shows_byte_address_code_and_text(disasm):
         "940C 0034",
         "jmp 0x0068",
     ]
-    assert disasm.item(2, 0).text() == "0x0006"  # слово 3 -> байт 6
+    assert disasm.item(2, 0).text() == "0x0006"  # word 3 -> byte 6
 
 
 def test_disasm_widget_highlights_current_pc_row(disasm):
@@ -249,7 +249,7 @@ def test_disasm_widget_highlights_current_pc_row(disasm):
     assert disasm.current_row() == 1
     assert disasm.item(1, 2).background().color() == QColor(255, 235, 130)
 
-    disasm.highlight_pc(0)  # прежняя строка очищается
+    disasm.highlight_pc(0)  # the previous row is cleared
     assert disasm.current_row() == 0
     assert disasm.item(1, 2).background().color() != QColor(255, 235, 130)
 

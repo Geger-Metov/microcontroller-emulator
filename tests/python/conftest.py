@@ -1,7 +1,7 @@
-"""Общие фикстуры GUI-тестов.
+"""Shared fixtures for the GUI tests.
 
-Qt-тесты запускаются без экрана: QT_QPA_PLATFORM=offscreen должен быть выставлен
-до импорта PySide6.
+Qt tests run without a display: QT_QPA_PLATFORM=offscreen must be set
+before PySide6 is imported.
 """
 
 import os
@@ -18,7 +18,7 @@ HEX_DIR = REPO_ROOT / "tests" / "data" / "hex"
 
 
 class FakeEmulator:
-    """Подставной эмулятор: ничего не считает, только хранит состояние и считает вызовы."""
+    """A fake emulator: computes nothing, only stores state and counts calls."""
 
     def __init__(self) -> None:
         self.memory: dict[int, int] = {}
@@ -29,9 +29,9 @@ class FakeEmulator:
         self.loaded: list[str] = []
         self.fail_step: Exception | None = None
         self.fail_run: Exception | None = None
-        # Что вернёт disassemble(): строки в формате модуля
+        # What disassemble() will return: rows in the module format
         self.program: list[dict] = []
-        self.runs: list[int] = []  # размеры пачек, переданных в run()
+        self.runs: list[int] = []  # sizes of the batches passed to run()
         self.fail_load: Exception | None = None
 
     def step(self) -> None:

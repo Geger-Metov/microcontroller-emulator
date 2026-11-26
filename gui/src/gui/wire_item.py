@@ -7,7 +7,7 @@ class WireItem(QGraphicsPathItem):
         super().__init__(parent)
         self.start_conn = start_conn
         self.end_conn = end_conn
-        pen = QPen(QColor(0, 150, 0), 2)  # тёмно-зелёный, толщина 2
+        pen = QPen(QColor(0, 150, 0), 2)  # dark green, width 2
         self.setPen(pen)
         self.setZValue(999)
         self.update_path()

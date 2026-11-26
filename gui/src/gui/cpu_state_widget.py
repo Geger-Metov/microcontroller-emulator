@@ -4,11 +4,11 @@ from PySide6.QtWidgets import QGroupBox, QLabel, QTextEdit, QVBoxLayout, QWidget
 class CpuStateWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMaximumWidth(350)  # чуть шире, но не критично
+        self.setMaximumWidth(350)  # a bit wider, but not critical
 
         main_layout = QVBoxLayout(self)
 
-        # Основные регистры
+        # Main registers
         cpu_group = QGroupBox("CPU")
         cpu_layout = QVBoxLayout(cpu_group)
         self.pc_label = QLabel("PC: 0x0000")
@@ -19,7 +19,7 @@ class CpuStateWidget(QWidget):
         cpu_layout.addWidget(self.sreg_label)
         main_layout.addWidget(cpu_group)
 
-        # Регистры R0-R31 в компактном виде
+        # Registers R0-R31 in a compact form
         regs_group = QGroupBox("General Registers")
         regs_layout = QVBoxLayout(regs_group)
         self.regs_text = QTextEdit()

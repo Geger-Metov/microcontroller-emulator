@@ -9,7 +9,7 @@ def test_load_hex_loads_then_resets_and_notifies(controller, fake_emu):
     assert controller.load_hex("firmware.hex") is True
 
     assert fake_emu.loaded == ["firmware.hex"]
-    assert fake_emu.resets == resets_before + 1  # сброс после загрузки
+    assert fake_emu.resets == resets_before + 1  # reset after loading
     assert calls == ["update"]
     assert controller.last_error is None
 
@@ -25,7 +25,7 @@ def test_load_hex_error_is_reported_not_raised(controller, fake_emu):
     assert controller.last_error is not None
     assert "bad checksum" in controller.last_error
     assert errors == [controller.last_error]
-    assert updates == []  # при ошибке GUI не обновляем как при успехе
+    assert updates == []  # on an error the GUI is not updated as on success
 
 
 def test_step_error_returns_false_and_keeps_message(controller, fake_emu):
@@ -47,7 +47,7 @@ def test_success_clears_previous_error(controller, fake_emu):
 
 def test_error_without_callback_does_not_crash(controller, fake_emu):
     fake_emu.fail_step = RuntimeError("boom")
-    assert controller.step() is False  # колбэк не задан — просто False
+    assert controller.step() is False  # no callback set — just False
 
 
 def test_run_cycles_passes_count_and_notifies(controller, fake_emu):
@@ -77,7 +77,7 @@ def test_port_registers_read_the_right_addresses(controller, fake_emu):
 
 
 def test_register_addresses_match_atmega328p_datasheet():
-    # I/O-адрес + 0x20: PINB=0x03, DDRB=0x04, PORTB=0x05, PIND=0x09, DDRD=0x0A, PORTD=0x0B
+    # I/O address + 0x20: PINB=0x03, DDRB=0x04, PORTB=0x05, PIND=0x09, DDRD=0x0A, PORTD=0x0B
     assert (PINB, DDRB, PORTB) == (0x03 + 0x20, 0x04 + 0x20, 0x05 + 0x20)
     assert (DDRD, PORTD) == (0x0A + 0x20, 0x0B + 0x20)
 
@@ -90,8 +90,8 @@ def test_legacy_gpio_state_has_port_b_bits(controller, fake_emu):
 
 
 def test_default_emulator_is_imported_lazily():
-    # Без аргумента контроллер создаёт настоящий Emulator; если модуль не собран —
-    # ошибка импорта, а не молчаливая подмена.
+    # Without an argument the controller creates a real Emulator; if the module is not built —
+    # an import error, not a silent substitution.
     try:
         import emulator_backend  # noqa: F401
     except ImportError:

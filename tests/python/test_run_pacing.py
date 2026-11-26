@@ -1,4 +1,4 @@
-"""RunPacer: перевод реального времени в такты МК (чистая логика)."""
+"""RunPacer: converting real time into MCU cycles (pure logic)."""
 
 import pytest
 
@@ -26,14 +26,14 @@ def test_speed_scales_cycles():
 def test_long_pause_is_clamped_to_max_frame():
     p = RunPacer(clock_hz=1_000_000, max_frame_s=0.1)
     p.start(0.0)
-    assert p.cycles_since_last(30.0) == 100_000  # не 30 млн
-    assert p.cycles_since_last(30.016) == 16_000  # дальше идёт как обычно
+    assert p.cycles_since_last(30.0) == 100_000  # not 30 million
+    assert p.cycles_since_last(30.016) == 16_000  # then it goes on as usual
 
 
 def test_fractional_cycles_are_carried_over():
-    p = RunPacer(clock_hz=10, max_frame_s=10)  # 10 Гц: 0.25 с = 2.5 такта
+    p = RunPacer(clock_hz=10, max_frame_s=10)  # 10 Hz: 0.25 s = 2.5 cycles
     p.start(0.0)
-    total = sum(p.cycles_since_last(0.25 * i) for i in range(1, 9))  # всего 2 с
+    total = sum(p.cycles_since_last(0.25 * i) for i in range(1, 9))  # 2 s in total
     assert total == 20
 
 
@@ -51,5 +51,5 @@ def test_default_clock_is_arduino_uno():
 def test_average_speed_is_exact_over_many_frames(speed):
     p = RunPacer(clock_hz=16_000_000, speed=speed)
     p.start(0.0)
-    total = sum(p.cycles_since_last(0.016 * i) for i in range(1, 626))  # 10 с
+    total = sum(p.cycles_since_last(0.016 * i) for i in range(1, 626))  # 10 s
     assert abs(total - 16_000_000 * speed * 10) <= 1

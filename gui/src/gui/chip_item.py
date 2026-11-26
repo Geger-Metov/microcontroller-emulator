@@ -10,8 +10,8 @@ from PySide6.QtWidgets import (
 from gui.interactive_items import ConnectorItem
 from gui.pin_logic import bit, pin_kind
 
-# Цвет индикатора пина на корпусе: выход=1 красный, выход=0 зелёный,
-# вход с подтяжкой жёлтый, вход серый.
+# Pin indicator color on the chip body: output=1 red, output=0 green,
+# input with pull-up yellow, input gray.
 PIN_COLORS = {
     "output_high": QColor(Qt.GlobalColor.red),
     "output_low": QColor(0, 128, 0),
@@ -32,13 +32,13 @@ class ChipItem(QGraphicsRectItem):
 
         print(f"[ChipItem] Created at pos ({self.pos().x()}, {self.pos().y()})")
 
-        # Надпись чипа
+        # Chip label
         label = QGraphicsTextItem("ATmega328P", self)
         label.setPos(90, 100)
         label.setDefaultTextColor(Qt.GlobalColor.black)
         label.setZValue(10)
 
-        # Порт B
+        # Port B
         self.pin_ellipses_B = {}
         self.pin_labels_B = {}
         self.pin_connectors_B = {}
@@ -49,9 +49,9 @@ class ChipItem(QGraphicsRectItem):
             ellipse.setBrush(QBrush(Qt.GlobalColor.gray))
 
             text = QGraphicsTextItem(f"PB{i}", self)
-            text.setPos(-25, y - 2)  # или чуть правее, например -20
+            text.setPos(-25, y - 2)  # or slightly to the right, e.g. -20
             text.setDefaultTextColor(Qt.GlobalColor.red)
-            text.setZValue(100)  # высокий Z
+            text.setZValue(100)  # high Z
             font = text.font()
             font.setPointSize(12)
             font.setBold(True)
@@ -65,7 +65,7 @@ class ChipItem(QGraphicsRectItem):
             self.pin_labels_B[i] = text
             self.pin_connectors_B[i] = conn
 
-        # Порт D
+        # Port D
         self.pin_ellipses_D = {}
         self.pin_labels_D = {}
         self.pin_connectors_D = {}
@@ -76,9 +76,9 @@ class ChipItem(QGraphicsRectItem):
             ellipse.setBrush(QBrush(Qt.GlobalColor.gray))
 
             text = QGraphicsTextItem(f"PD{i}", self)
-            text.setPos(260, y - 2)  # или чуть правее, например -20
+            text.setPos(260, y - 2)  # or slightly to the right, e.g. -20
             text.setDefaultTextColor(Qt.GlobalColor.red)
-            text.setZValue(100)  # высокий Z
+            text.setZValue(100)  # high Z
             font = text.font()
             font.setPointSize(12)
             font.setBold(True)

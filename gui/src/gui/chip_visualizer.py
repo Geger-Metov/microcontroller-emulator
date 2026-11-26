@@ -18,7 +18,7 @@ class ChipVisualizer(QGraphicsScene):
         self.controller = controller
         self.setSceneRect(0, 0, 600, 400)
 
-        # Корпус чипа
+        # Chip body
         chip_rect = QGraphicsRectItem(100, 80, 300, 240)
         chip_rect.setPen(QPen(Qt.GlobalColor.black, 2))
         chip_rect.setBrush(QBrush(QColor(200, 200, 200)))
@@ -27,7 +27,7 @@ class ChipVisualizer(QGraphicsScene):
         label.setPos(180, 180)
         self.addItem(label)
 
-        # Пины порта B
+        # Port B pins
         self.pin_ellipses = {}
         self.pin_connectors = {}
         for i in range(8):
@@ -50,7 +50,7 @@ class ChipVisualizer(QGraphicsScene):
         label.setPos(x - 12, y + 5)
         self.addItem(label)
 
-        conn = ConnectorItem()  # без родителя
+        conn = ConnectorItem()  # no parent
         conn.setPos(x + 10, y)
         self.addItem(conn)
         return ellipse, conn
@@ -86,7 +86,9 @@ class ChipVisualizer(QGraphicsScene):
                 if isinstance(item, ConnectorItem):
                     if self.first_connector is None:
                         self.first_connector = item
-                        item.setBrush(QBrush(Qt.GlobalColor.cyan))  # подсветка выбора
+                        item.setBrush(
+                            QBrush(Qt.GlobalColor.cyan)
+                        )  # selection highlight
                     else:
                         if item is not self.first_connector:
                             wire = WireItem(self.first_connector, item)

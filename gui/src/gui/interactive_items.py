@@ -36,10 +36,10 @@ class MovableItem(QGraphicsObject):
         return c
 
     def paint(self, painter, option, widget=None):
-        pass  # дочерние элементы рисуют себя сами
+        pass  # child items draw themselves
 
     def boundingRect(self) -> QRectF:
-        return QRectF(-50, -50, 100, 100)  # переопределяется
+        return QRectF(-50, -50, 100, 100)  # overridden
 
 
 class LEDItem(MovableItem):

@@ -7,37 +7,37 @@ class EmulatorBusyError(EmulatorError): ...
 class MemoryAccessError(EmulatorError): ...
 
 class Snapshot(TypedDict):
-    pc: int  # в словах
+    pc: int  # in words
     sp: int
     sreg: int
     cycles: int
-    registers: list[int]  # 32 элемента
+    registers: list[int]  # 32 elements
 
 class MemoryRegion(TypedDict):
     name: str
     start: int
-    end: int  # включительно
+    end: int  # inclusive
     readable: bool
     writable: bool
 
 class DisasmRow(TypedDict):
-    addr: int  # адрес первого слова, в словах
-    size: int  # 1 или 2 слова
+    addr: int  # the address of the first word, in words
+    size: int  # 1 or 2 words
     words: list[int]
-    text: str  # переходы — байтовые адреса, как в avr-objdump
-    known: bool  # False — опкода нет в ATmega328P
+    text: str  # jumps are byte addresses, as in avr-objdump
+    known: bool  # False — the opcode does not exist on the ATmega328P
 
 class Emulator:
     def __init__(self) -> None: ...
     def step(self) -> None: ...
-    def run(self, cycles: int) -> int: ...  # выполненные такты; отпускает GIL
-    def stop(self) -> None: ...  # из другого потока; прерывает run()
+    def run(self, cycles: int) -> int: ...  # cycles executed; releases the GIL
+    def stop(self) -> None: ...  # from another thread; interrupts run()
     def is_running(self) -> bool: ...
     def reset(self) -> None: ...
-    def get_pc(self) -> int: ...  # в словах, не в байтах
+    def get_pc(self) -> int: ...  # in words, not bytes
     def get_sp(self) -> int: ...
     def get_sreg(self) -> int: ...
-    def get_registers(self) -> list[int]: ...  # 32 элемента
+    def get_registers(self) -> list[int]: ...  # 32 elements
     def snapshot(self) -> Snapshot: ...
     def read_memory(self, addr: int) -> int: ...
     def write_memory(self, addr: int, value: int) -> None: ...
@@ -46,5 +46,5 @@ class Emulator:
     def read_flash(self, byte_addr: int, length: int) -> bytes: ...
     def disassemble(self, word_addr: int, count: int) -> list[DisasmRow]: ...
     def get_memory_map(self) -> list[MemoryRegion]: ...
-    def load_hex(self, path: str) -> list[str]: ...  # предупреждения
+    def load_hex(self, path: str) -> list[str]: ...  # warnings
     def get_cycle_count(self) -> int: ...

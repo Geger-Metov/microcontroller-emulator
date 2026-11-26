@@ -1,4 +1,4 @@
-"""Интеграция с настоящим C++ ядром (нужен собранный emulator_backend)."""
+"""Integration with the real C++ core (needs a built emulator_backend)."""
 
 import threading
 import time
@@ -6,7 +6,9 @@ from itertools import pairwise
 
 import pytest
 
-pytest.importorskip("emulator_backend", reason="модуль emulator_backend не собран")
+pytest.importorskip(
+    "emulator_backend", reason="the emulator_backend module is not built"
+)
 
 import emulator_backend as backend
 
@@ -22,14 +24,14 @@ def test_blink_firmware_toggles_pb5(real, hex_dir):
     assert real.load_hex(str(hex_dir / "firmware.hex")), real.last_error
 
     levels = set()
-    for _ in range(300):  # до ~3 млн тактов; полупериод ≈ 628 тыс.
+    for _ in range(300):  # up to ~3M cycles; a half-period is ≈ 628 K
         assert real.run_cycles(10_000), real.last_error
         regs = real.get_port_registers()["B"]
-        assert regs.ddr & 0x20, "PB5 должен быть выходом"
+        assert regs.ddr & 0x20, "PB5 must be an output"
         levels.add((regs.port >> 5) & 1)
         if levels == {0, 1}:
             break
-    assert levels == {0, 1}, "PB5 не переключился"
+    assert levels == {0, 1}, "PB5 did not toggle"
 
 
 def test_pin_test_firmware_sets_static_pattern(real, hex_dir):
@@ -40,7 +42,7 @@ def test_pin_test_firmware_sets_static_pattern(real, hex_dir):
     d = real.get_port_registers()["D"]
     assert (b.ddr, b.port) == (0x1F, 0x0F)
     assert d.ddr == 0xFC
-    assert d.port & 0xB8 == 0xB8  # PD3,4,5,7 = 1; PD2 переключается в цикле
+    assert d.port & 0xB8 == 0xB8  # PD3,4,5,7 = 1; PD2 toggles in the loop
 
 
 def test_missing_file_is_reported(real, tmp_path):
@@ -51,7 +53,7 @@ def test_missing_file_is_reported(real, tmp_path):
 
 
 def test_unknown_opcode_is_reported_and_stops(real, tmp_path):
-    # Программа из одного слова 0x95D8 (ELPM — на ATmega328P нет)
+    # A program of one word 0x95D8 (ELPM — not on the ATmega328P)
     hex_file = tmp_path / "bad.hex"
     hex_file.write_text(":02000000D89591\n:00000001FF\n")
     assert real.load_hex(str(hex_file)), real.last_error
@@ -60,7 +62,7 @@ def test_unknown_opcode_is_reported_and_stops(real, tmp_path):
 
 
 def test_register_constants_are_real_ports(real, hex_dir):
-    # DDRx/PORTx по этим адресам должны отражать то, что делает прошивка
+    # DDRx/PORTx at these addresses must reflect what the firmware does
     real.load_hex(str(hex_dir / "firmware_test.hex"))
     real.run_cycles(1000)
     assert real.emu.read_memory(DDRB) == 0x1F
@@ -69,7 +71,7 @@ def test_register_constants_are_real_ports(real, hex_dir):
     assert real.emu.read_memory(PORTD) & 0xB8 == 0xB8
 
 
-# ---- API биндингов: типизированные ошибки, run/stop, снимок, блоки -----------
+# ---- Bindings API: typed errors, run/stop, snapshot, blocks -----------
 
 
 @pytest.fixture
@@ -83,10 +85,10 @@ def emu(hex_dir):
 def test_errors_are_typed(tmp_path):
     e = backend.Emulator()
     bad = tmp_path / "bad.hex"
-    bad.write_text(":0400000011\n")  # заявлено 4 байта, строка короче
+    bad.write_text(":0400000011\n")  # declares 4 bytes, the line is shorter
     with pytest.raises(backend.HexFormatError, match="line 1"):
         e.load_hex(str(bad))
-    with pytest.raises(backend.EmulatorError):  # общий базовый класс
+    with pytest.raises(backend.EmulatorError):  # the common base class
         e.load_hex(str(bad))
 
     with pytest.raises(backend.MemoryAccessError, match="0x0900"):
@@ -119,7 +121,7 @@ def test_stop_interrupts_run_from_another_thread(emu):
         time.sleep(0.001)
     assert emu.is_running()
 
-    # Пока run() идёт, GIL свободен (этот поток работает), а остальной API занят.
+    # While run() is in progress the GIL is free (this thread works), but the rest of the API is busy.
     with pytest.raises(backend.EmulatorBusyError):
         emu.get_pc()
     with pytest.raises(backend.EmulatorBusyError):
@@ -127,7 +129,7 @@ def test_stop_interrupts_run_from_another_thread(emu):
 
     emu.stop()
     worker.join(timeout=5)
-    assert not worker.is_alive(), "stop() не прервал run()"
+    assert not worker.is_alive(), "stop() did not interrupt run()"
     assert 0 < result[0] < 10**12
     assert not emu.is_running()
     assert emu.get_cycle_count() == result[0]
@@ -150,16 +152,16 @@ def test_snapshot_matches_individual_getters(emu):
 
 
 def test_read_flash_and_memory_blocks(emu):
-    # firmware.hex начинается с JMP: 0x940C -> байты 0C 94 (little-endian)
+    # firmware.hex starts with JMP: 0x940C -> bytes 0C 94 (little-endian)
     assert emu.read_flash(0, 2) == bytes([0x0C, 0x94])
     word = emu.read_program_word(0)
-    assert emu.read_flash(1, 1) == bytes([word >> 8])  # нечётный байтовый адрес
+    assert emu.read_flash(1, 1) == bytes([word >> 8])  # odd byte address
 
     emu.write_memory(0x100, 0xAB)
     emu.write_memory(0x101, 0xCD)
     assert emu.read_memory_block(0x100, 2) == b"\xab\xcd"
     with pytest.raises(backend.MemoryAccessError):
-        emu.read_memory_block(0x8FF, 2)  # выходит за SRAM
+        emu.read_memory_block(0x8FF, 2)  # goes beyond SRAM
 
 
 def test_memory_map_lists_data_space(emu):
@@ -171,7 +173,7 @@ def test_memory_map_lists_data_space(emu):
 def test_load_hex_returns_warnings(tmp_path):
     hex_file = tmp_path / "fuses.hex"
     hex_file.write_text(
-        ":02000004008278\n"  # линейная база 0x0082 -> адреса с 0x820000
+        ":02000004008278\n"  # linear base 0x0082 -> addresses from 0x820000
         ":01000000FF00\n"
         ":00000001FF\n"
     )
@@ -186,7 +188,7 @@ def test_disassemble_real_firmware(emu):
     first = rows[0]
     assert first["text"] == "jmp 0x0068" and first["size"] == 2
     assert first["words"] == [0x940C, 0x0034] and first["known"]
-    # адреса идут подряд с учётом двухсловных инструкций
+    # addresses run consecutively, accounting for two-word instructions
     for prev, nxt in pairwise(rows):
         assert nxt["addr"] == prev["addr"] + prev["size"]
 
@@ -200,6 +202,6 @@ def test_disassemble_listing_loads_through_the_model(emu):
     from gui.disasm_model import load_listing
 
     listing = load_listing(emu)
-    assert 0 < len(listing) < 400  # хвост 0xFFFF отброшен
+    assert 0 < len(listing) < 400  # the 0xFFFF tail is dropped
     assert listing.rows[0].text == "jmp 0x0068"
-    assert listing.row_for_pc(0x34) is not None  # начало main (байт 0x68)
+    assert listing.row_for_pc(0x34) is not None  # the start of main (byte 0x68)

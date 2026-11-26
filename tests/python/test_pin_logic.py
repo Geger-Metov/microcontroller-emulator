@@ -14,7 +14,7 @@ def test_pin_kind_covers_all_four_modes():
 
 
 def test_output_levels_contains_only_outputs():
-    # DDRB=0x21 (PB0, PB5 — выходы), PORTB=0x20 (PB5 = 1); порт D — все входы
+    # DDRB=0x21 (PB0, PB5 are outputs), PORTB=0x20 (PB5 = 1); port D — all inputs
     levels = output_levels({"B": (0x21, 0x20), "D": (0x00, 0xFF)})
     assert levels == {("B", 0): 0, ("B", 5): 1}
 
@@ -31,7 +31,7 @@ def test_led_on_only_when_output_is_high():
 
 
 def test_led_on_input_pin_is_left_unchanged():
-    # пин не выход — состояние светодиода не должно попасть в результат
+    # the pin is not an output — the LED state must not reach the result
     states = led_states([(("B", 3), "led")], {("B", 5): 1})
     assert states == {}
 
@@ -40,6 +40,6 @@ def test_led_with_several_wires_is_on_if_any_pin_high():
     outputs = {("B", 0): 0, ("B", 1): 1}
     states = led_states([(("B", 0), "led"), (("B", 1), "led")], outputs)
     assert states == {"led": True}
-    # порядок проводов не должен влиять
+    # the order of wires must not matter
     states = led_states([(("B", 1), "led"), (("B", 0), "led")], outputs)
     assert states == {"led": True}

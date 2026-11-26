@@ -15,22 +15,22 @@ class SimulationScene(QGraphicsScene):
         self.setSceneRect(-60, 0, 660, 400)
         self.setBackgroundBrush(
             QBrush(Qt.GlobalColor.white)
-        )  # временно белый для отладки
+        )  # temporarily white for debugging
 
-        self.chip_item = None  # чипа изначально нет
+        self.chip_item = None  # no chip initially
         self.connect_mode = False
         self.first_connector = None
         self.wires = []
 
     def show_chip(self):
-        """Добавить чип на сцену, если его ещё нет."""
+        """Add the chip to the scene if it is not there yet."""
         if self.chip_item is None:
             self.chip_item = ChipItem(self.controller)
             self.addItem(self.chip_item)
             print(f"[Scene] Chip added, total items: {len(self.items())}")
 
     def hide_chip(self):
-        """Убрать чип со сцены."""
+        """Remove the chip from the scene."""
         if self.chip_item is not None:
             self.removeItem(self.chip_item)
             self.chip_item = None
@@ -52,7 +52,7 @@ class SimulationScene(QGraphicsScene):
 
     def set_connect_mode(self, enabled):
         self.connect_mode = enabled
-        # Блокируем перемещение всех MovableItem в режиме соединения
+        # Block moving all MovableItems in connection mode
         for item in self.items():
             if isinstance(item, MovableItem):
                 item.setFlag(item.ItemIsMovable, not enabled)
@@ -72,7 +72,7 @@ class SimulationScene(QGraphicsScene):
                         self.first_connector = item
                         item.setBrush(
                             QBrush(Qt.GlobalColor.cyan)
-                        )  # подсветка первого коннектора
+                        )  # highlight the first connector
                         print("[Scene] First connector selected")
                     else:
                         if item is not self.first_connector:
@@ -84,7 +84,7 @@ class SimulationScene(QGraphicsScene):
                         self.first_connector = None
                     event.accept()
                     return
-            # Клик мимо коннектора – сброс
+            # A click away from a connector – reset
             if self.first_connector:
                 self.first_connector.setBrush(QBrush(Qt.GlobalColor.yellow))
                 self.first_connector = None
@@ -93,7 +93,7 @@ class SimulationScene(QGraphicsScene):
             super().mousePressEvent(event)
 
     def _pin_of(self, connector):
-        """Ключ пина чипа ("B", 5) для коннектора или None, если это не пин."""
+        """The chip pin key ("B", 5) for a connector, or None if it is not a pin."""
         if self.chip_item is None:
             return None
         for port_name, connectors in (
@@ -106,7 +106,7 @@ class SimulationScene(QGraphicsScene):
         return None
 
     def led_links(self):
-        """Пары (пин чипа, светодиод) по всем проводам сцены."""
+        """(chip pin, LED) pairs for all wires of the scene."""
         links = []
         for wire in self.wires:
             for pin_conn, other in (
@@ -120,22 +120,22 @@ class SimulationScene(QGraphicsScene):
         return links
 
     def refresh_pins(self):
-        """Обновить цвета пинов чипа и состояние подключённой периферии."""
+        """Update the chip pin colors and the state of the connected peripherals."""
         if not self.controller or not self.chip_item:
             return
 
         ports = self.controller.get_port_registers()
         b, d = ports["B"], ports["D"]
 
-        # Индикаторы пинов на корпусе чипа
+        # Pin indicators on the chip body
         self.chip_item.update_pin_colors(b.ddr, b.port, d.ddr, d.port)
 
-        # Светодиоды: горят, если соединены с выходным пином с единицей
+        # LEDs: lit if connected to an output pin holding 1
         outputs = output_levels({"B": (b.ddr, b.port), "D": (d.ddr, d.port)})
         for led, on in led_states(self.led_links(), outputs).items():
             led.set_state(on)
-        # Другие устройства (например, кнопка) пока не управляются.
+        # Other devices (for example a button) are not driven yet.
 
-        # Обновляем позиции проводов (на случай перемещения элементов)
+        # Update the wire positions (in case items were moved)
         for w in self.wires:
             w.update_position()

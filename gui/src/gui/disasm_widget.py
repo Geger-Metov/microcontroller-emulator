@@ -14,12 +14,12 @@ UNKNOWN_COLOR = QColor(150, 150, 150)
 
 
 class DisassemblyWidget(QTableWidget):
-    """Листинг программы: адрес (байтовый), машинный код, инструкция.
+    """Program listing: (byte) address, machine code, instruction.
 
-    Строку, на которую указывает PC, подсвечивает и прокручивает в видимую часть.
+    ~Highlights the row PC points to and scrolls it into view.
     """
 
-    COLUMNS = ("Адрес", "Код", "Инструкция")
+    COLUMNS = ("Address", "Code", "Instruction")
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(0, len(self.COLUMNS), parent)
@@ -54,7 +54,7 @@ class DisassemblyWidget(QTableWidget):
             self.setUpdatesEnabled(True)
 
     def highlight_pc(self, pc: int) -> None:
-        """Подсветить строку, на которую указывает PC (в словах)."""
+        """Highlight the row PC points to (in words)."""
         if self.listing is None:
             return
         row = self.listing.row_for_pc(pc)

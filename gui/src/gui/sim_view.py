@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
 from gui.run_pacing import RunPacer
 from gui.simulation_scene import SimulationScene
 
-FRAME_MS = 16  # ≈60 кадров/с
-# Скорость относительно реального времени (текст в списке → множитель)
+FRAME_MS = 16  # ≈60 frames/s
+# Speed relative to real time (list text → multiplier)
 SPEEDS = ("1×", 1.0), ("0.1×", 0.1), ("0.01×", 0.01)
 
 
@@ -31,7 +31,7 @@ class SimulatorView(QWidget):
 
         layout = QVBoxLayout(self)
 
-        # Панель инструментов
+        # Toolbar
         toolbar = QHBoxLayout()
         self.btn_load = QPushButton("Load HEX")
         self.btn_run = QPushButton("Run")
@@ -40,7 +40,7 @@ class SimulatorView(QWidget):
         self.speed_box = QComboBox()
         for label, speed in SPEEDS:
             self.speed_box.addItem(label, speed)
-        self.speed_box.setToolTip("Скорость относительно реального времени")
+        self.speed_box.setToolTip("Speed relative to real time")
         self.btn_connect = QPushButton("Connect")
         self.btn_connect.setCheckable(True)
 
@@ -53,16 +53,16 @@ class SimulatorView(QWidget):
         toolbar.addStretch()
         layout.addLayout(toolbar)
 
-        # Графическая сцена
+        # Graphics scene
         self.graphics_view = QGraphicsView()
         self.chip_scene = SimulationScene(self.controller)
         self.graphics_view.setScene(self.chip_scene)
 
-        # === Критически важные настройки ===
+        # === Critical settings ===
         self.graphics_view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.graphics_view.setSizePolicy(
             QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )  # растягиваем на всё доступное пространство
+        )  # stretch to all the available space
         self.graphics_view.setHorizontalScrollBarPolicy(
             Qt.ScrollBarPolicy.ScrollBarAlwaysOff
         )
@@ -71,29 +71,29 @@ class SimulatorView(QWidget):
         )
         self.graphics_view.setSceneRect(
             self.chip_scene.sceneRect()
-        )  # явно задаём прямоугольник сцены
+        )  # set the scene rectangle explicitly
         self.graphics_view.fitInView(
             self.chip_scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio
         )
         self.graphics_view.setBackgroundBrush(
             QBrush(QColor(200, 200, 200))
-        )  # серый фон для контраста
+        )  # gray background for contrast
         # =================================
 
         layout.addWidget(self.graphics_view)
 
-        # Отладка: временная жёлтая надпись (потом удалим)
+        # Debug: a temporary yellow label (to be removed later)
         # test_label = QLabel("IF YOU SEE THIS, GRAPHICS VIEW IS BROKEN")
         # test_label.setStyleSheet("background: yellow; font-size: 20px;")
         # layout.addWidget(test_label)
 
-        # Таймер
+        # Timer
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._timer_tick)
         self.pacer = RunPacer()
-        self._now = time.perf_counter  # подменяется в тестах
+        self._now = time.perf_counter  # replaced in tests
 
-        # Сигналы
+        # Signals
         self.btn_load.clicked.connect(self._on_load)
         self.btn_step.clicked.connect(self._on_step)
         self.btn_run.clicked.connect(self._on_run)
@@ -101,16 +101,16 @@ class SimulatorView(QWidget):
         self.btn_connect.toggled.connect(self._on_toggle_connect)
         self.speed_box.currentIndexChanged.connect(self._on_speed_changed)
 
-        # Колбэки GUI
+        # GUI callbacks
         self.update_callback: Callable[[], None] | None = None
-        # вызывается после успешной загрузки HEX
+        # called after a successful HEX load
         self.program_loaded_callback: Callable[[], None] | None = None
 
         if controller is not None:
             controller.set_error_callback(self._on_error)
 
     def resizeEvent(self, event):
-        """Автоматически подгонять масштаб сцены при изменении размера виджета."""
+        """Automatically fit the scene scale when the widget is resized."""
         super().resizeEvent(event)
         if self.chip_scene:
             self.graphics_view.fitInView(
@@ -129,12 +129,12 @@ class SimulatorView(QWidget):
         self.btn_run.setText("Run")
 
     def _on_error(self, message):
-        """Ошибка эмулятора: остановить автозапуск и показать причину."""
+        """Emulator error: stop auto-run and show the reason."""
         self._stop_run()
         self.show_error(message)
 
     def show_error(self, message):
-        QMessageBox.critical(self, "Ошибка эмулятора", message)
+        QMessageBox.critical(self, "Emulator error", message)
 
     def show_chip(self):
         if self.chip_scene:
@@ -190,7 +190,7 @@ class SimulatorView(QWidget):
                 self.update_callback()
 
     def _timer_tick(self):
-        """Один кадр: столько тактов, сколько прошло в реальном времени."""
+        """One frame: as many cycles as real time has elapsed."""
         if not self.controller:
             return
         cycles = self.pacer.cycles_since_last(self._now())
