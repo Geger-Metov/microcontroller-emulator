@@ -1,60 +1,62 @@
-# Эмулятор микроконтроллера ATmega328P
+# ATmega328P microcontroller emulator
 
-C++-ядро (CPU, шина, Timer0, GPIO, загрузчик Intel HEX) + GUI на Python/PySide6.
-Ядро собирается в статическую библиотеку `mcu_core`, из неё же строятся C++-тесты и
-Python-модуль `emulator_backend` (pybind11), который импортирует GUI.
+🇬🇧 English · 🇷🇺 [Русский](README.ru.md)
 
-## Требования
+A C++ core (CPU, buses, Timer0, GPIO, Intel HEX loader) plus a Python/PySide6 GUI.
+The core builds into the static library `mcu_core`, which is also used for the C++ tests and for the
+Python module `emulator_backend` (pybind11) imported by the GUI.
 
-| Что                              | Версия                        | Зачем                                     |
-| -------------------------------- | ----------------------------- | ----------------------------------------- |
-| CMake                            | ≥ 3.21 (пресеты)              | сборка                                    |
-| Компилятор                       | GCC ≥ 11 / Clang ≥ 14 (C++20) | ядро; флаги `-g3` рассчитаны на GCC/Clang |
-| [uv](https://docs.astral.sh/uv/) | любая свежая                  | окружение GUI (`gui/.venv`)               |
-| Python                           | см. `gui/.python-version`     | GUI и модуль `emulator_backend`           |
+## Requirements
 
-## Быстрый старт: собрать всё и запустить
+| What                             | Version                       | Why                                    |
+| -------------------------------- | ----------------------------- | -------------------------------------- |
+| CMake                            | ≥ 3.21 (presets)              | build                                  |
+| Compiler                         | GCC ≥ 11 / Clang ≥ 14 (C++20) | core; the `-g3` flags assume GCC/Clang |
+| [uv](https://docs.astral.sh/uv/) | any recent version            | GUI environment (`gui/.venv`)          |
+| Python                           | see `gui/.python-version`     | GUI and the `emulator_backend` module  |
 
-Команды выполняются из корня репозитория.
+## Quick start: build everything and run
+
+Run the commands from the repository root.
 
 ```bash
-# 1. Окружение GUI (PySide6 и др.) и pybind11 для сборки модуля — один раз
+# 1. GUI environment (PySide6 etc.) and pybind11 for building the module — once
 cd gui
 uv sync
 cd ..
 
-# 2. Сборка C++-ядра и Python-модуля (оптимизированная, -O2)
+# 2. Build the C++ core and the Python module (optimized, -O2)
 PY=$PWD/gui/.venv/bin/python
 cmake --preset release-python \
       -Dpybind11_DIR="$($PY -m pybind11 --cmakedir)" -DPython_EXECUTABLE="$PY"
 cmake --build --preset release-python
 
-# 3. Проверка: модуль импортируется, тесты проходят
+# 3. Check: the module imports and the tests pass
 (cd gui && uv run python -c "import emulator_backend; print(emulator_backend.Emulator)")
 ctest --test-dir build/release-python --output-on-failure
 
-# 4. Запуск GUI
+# 4. Run the GUI
 cd gui && uv run python -m gui.main
 ```
 
-Собранный `emulator_backend*.so` (`.pyd` на Windows) автоматически попадает в `gui/src`,
-дополнительно копировать ничего не нужно. Файл в git не коммитится: после клонирования
-его нужно собрать (шаг 2). Python-модуль собирайте только оптимизированно — в Debug с
-санитайзерами эмуляция в разы медленнее.
+The built `emulator_backend*.so` (`.pyd` on Windows) is placed into `gui/src` automatically;
+there is nothing to copy. The file is not committed to git: after cloning you have to build it
+(step 2). Always build the Python module optimized — with sanitizers in a Debug build the emulation
+is several times slower.
 
-## Свой `CMakeUserPresets.json` (чтобы не вводить `-D...` каждый раз)
+## Your own `CMakeUserPresets.json` (so you don't type `-D...` every time)
 
-В корне репозитория создайте файл `CMakeUserPresets.json`. В нём лежат абсолютные пути
-вашей машины, поэтому он в `.gitignore` и **не коммитится** — у каждого разработчика свой.
+Create `CMakeUserPresets.json` in the repository root. It contains absolute paths of your machine,
+so it is listed in `.gitignore` and is **not committed** — every developer has their own.
 
-1. Узнайте два пути:
+1. Find two paths:
 
    ```bash
    gui/.venv/bin/python -m pybind11 --cmakedir   # → pybind11_DIR
-   realpath gui/.venv/bin/python                  # → Python_EXECUTABLE (или просто gui/.venv/bin/python)
+   realpath gui/.venv/bin/python                  # → Python_EXECUTABLE (or just gui/.venv/bin/python)
    ```
 
-2. Вставьте их в файл (пример; пути подставьте свои):
+2. Put them into the file (an example; substitute your own paths):
 
    ```json
    {
@@ -72,55 +74,63 @@ cd gui && uv run python -m gui.main
    }
    ```
 
-   Пресет `my-python` наследует всё от `release-python` (оптимизация, модуль включён).
+   The `my-python` preset inherits everything from `release-python` (optimization, module enabled).
 
-3. Используйте его вместо длинной команды:
+3. Use it instead of the long command:
 
    ```bash
    cmake --preset my-python
    cmake --build --preset my-python
    ```
 
-Если в списке `cmake --list-presets` нового пресета нет — проверьте, что файл лежит в
-корне (рядом с `CMakePresets.json`) и это корректный JSON. Пересоздавать `gui/.venv`
-(например, при смене версии Python) нужно вместе с этим файлом: пути в нём изменятся.
+If the new preset is missing from `cmake --list-presets`, check that the file is in the repository
+root (next to `CMakePresets.json`) and is valid JSON. When you recreate `gui/.venv` (for example
+after changing the Python version), update this file too: the paths in it will change.
 
-## Тесты C++ ядра
+## C++ core tests
 
-Python и pybind11 для тестов не нужны.
+Python and pybind11 are not needed for the tests.
 
 ```bash
-# Отладка/тесты: -g3 -O0 + ASan/UBSan + -Werror (как в CI)
+# Debug/tests: -g3 -O0 + ASan/UBSan + -Werror (as in CI)
 cmake --preset debug
 cmake --build --preset debug
 ctest --preset debug
 
-# Оптимизированная сборка (-O2) и те же тесты
+# Optimized build (-O2) and the same tests
 cmake --preset release && cmake --build --preset release && ctest --preset release
 ```
 
-## Пресеты и опции CMake
+## CMake presets and options
 
-| Пресет           | Что делает                                                   |
-| ---------------- | ------------------------------------------------------------ |
-| `debug`          | `-g3 -O0`, ASan+UBSan, предупреждения как ошибки, без Python |
-| `release`        | `-O2`, предупреждения как ошибки, без Python                 |
-| `release-python` | `-O2` + модуль `emulator_backend` (нужен pybind11)           |
+| Preset           | What it does                                              |
+| ---------------- | --------------------------------------------------------- |
+| `debug`          | `-g3 -O0`, ASan+UBSan, warnings as errors, no Python      |
+| `release`        | `-O2`, warnings as errors, no Python                      |
+| `release-python` | `-O2` + the `emulator_backend` module (requires pybind11) |
 
-Опции: `MCU_BUILD_PYTHON` (модуль `emulator_backend`, нужен pybind11), `MCU_BUILD_TESTS`
-(по умолчанию ON), `MCU_SANITIZE` (OFF), `MCU_WARNINGS_AS_ERRORS` (OFF).
+Options: `MCU_BUILD_PYTHON` (the `emulator_backend` module, requires pybind11), `MCU_BUILD_TESTS`
+(ON by default), `MCU_SANITIZE` (OFF), `MCU_WARNINGS_AS_ERRORS` (OFF).
 
-## Редактор (clangd / Zed)
+## Editor (clangd / Zed)
 
-Все пресеты экспортируют `compile_commands.json`. Файл `.clangd` в корне указывает clangd
-на `build/release-python`: эта сборка содержит и ядро, и тесты, и `emu_bridge.cpp`.
-Сначала выполните шаг 2 из быстрого старта, затем перезапустите языковой сервер.
+All presets export `compile_commands.json`. The `.clangd` file in the root points clangd to
+`build/release-python`: that build contains the core, the tests and `emu_bridge.cpp`.
+Run step 2 of the quick start first, then restart the language server.
 
-## Типичные проблемы
+## Troubleshooting
 
-- **`pybind11 не найден`** при конфигурации — не передан `-Dpybind11_DIR` (или он не
-  попал в `CMakeUserPresets.json`), либо не выполнен `uv add --dev pybind11`.
-- **`ModuleNotFoundError: emulator_backend`** — модуль не собран (шаг 2) или собран под
-  другой Python: в имени `.so` зашита версия (`cpython-315`), она должна совпадать с
-  `gui/.venv`. Проверьте `-DPython_EXECUTABLE`.
-- **GUI тормозит** — модуль собран пресетом `debug`, а не `release-python`.
+- **`pybind11 not found`** during configuration — `-Dpybind11_DIR` was not passed (or is missing from
+  `CMakeUserPresets.json`), or `uv sync` was not run.
+- **`ModuleNotFoundError: emulator_backend`** — the module is not built (step 2) or was built for a
+  different Python: the `.so` name contains the version (`cpython-315`), which must match
+  `gui/.venv`. Check `-DPython_EXECUTABLE`.
+- **The GUI is slow** — the module was built with the `debug` preset instead of `release-python`.
+
+## Documentation
+
+See [docs/](docs/README.md): architecture, recipes, status, decision log, glossary.
+
+## License
+
+[MIT](LICENSE)

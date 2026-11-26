@@ -11,12 +11,22 @@ __pycache__/
 build/
 cmake-build-*/
 
-# my files
+# personal notes (any other Markdown is ignored; list project documents explicitly)
 *.md
-*.pdf
 !README.md
+!README.ru.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+!SECURITY.md
+!CHANGELOG.md
 !docs/*.md
+!.github/**/*.md
+
+# personal CMake presets (absolute paths of your machine)
 CMakeUserPresets.json
 
-# собранный Python-модуль
+# vendor PDFs (copyrighted; download them yourself, see docs/references.md)
+docs/*.pdf
+
+# built Python module
 gui/src/emulator_backend*

@@ -1,14 +1,12 @@
-# Документация проекта
+# Project documentation
 
-Короткие заметки «для себя через полгода». Читать в таком порядке:
+Short notes — "for myself in six months", and for new contributors. Read them in this order:
 
-1. [architecture.md](architecture.md) — из чего состоит проект и как данные идут от HEX-файла до светодиода.
-2. [how-to.md](how-to.md) — рецепты: собрать, добавить инструкцию/регистр/периферию/тест.
-3. [status.md](status.md) — что готово, что нет, ограничения и ближайшие шаги.
-4. [decisions.md](decisions.md) — почему сделано именно так (журнал решений).
-5. [glossary.md](glossary.md) — соглашения AVR, которые легко забыть (слова/байты, +0x20 и т. д.).
+1. [architecture.md](architecture.md) — what the project consists of and how data flows from a HEX file to an LED.
+2. [how-to.md](how-to.md) — recipes: build, add an instruction/register/peripheral/test.
+3. [status.md](status.md) — what is done, what is not, limitations and next steps.
+4. [decisions.md](decisions.md) — why things are done this way (decision log).
+5. [glossary.md](glossary.md) — AVR conventions that are easy to forget (words vs bytes, +0x20, etc.).
+6. [references.md](references.md) — the Microchip documents the implementation follows, and where to get them.
 
-Справочные материалы лежат здесь же: `ATmega328.pdf` (даташит), `AVR-InstructionSet-Manual-DS40002198.pdf`
-(набор инструкций; из него взяты формулы флагов и такты).
-
-Правило: **если меняете поведение — поправьте документ в том же коммите.** Лучше меньше текста, но верного.
+Rule: **if you change behavior, update the document in the same commit.** Less text, but correct, is better.

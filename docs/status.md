@@ -1,62 +1,68 @@
-# Статус проекта
+# Project status
 
-Обновлено: 2026-11-25.
+Updated: 2026-11-25.
 
-## Готово
+## Done
 
-- Сборка: CMake-пресеты (`debug`, `release`, `release-python`), CI (матрица debug/release), pre-commit (clang-format).
-- Ядро: полный набор инструкций ATmega328P, единый учёт тактов, reset, стек как в железе,
-  прерывания (очередь, приоритеты, сброс флага, правило «ещё одна инструкция»), SLEEP.
-- Timer0: Normal/CTC/Fast PWM/Phase Correct, предделители, TOV0/OCF0A/OCF0B, TIMSK0, три вектора.
-- Неизвестные I/O-регистры (0x20–0xFF) — RAZ/WI, без исключения.
-- Тесты GUI (`tests/python/`): ≈45 штук — логика пинов, контроллер, виджеты Qt (offscreen), интеграция с реальным `emulator_backend`; выполняются в CI (джоб `gui-tests`).
-- Единый `ruff.toml` в корне: редактор, pre-commit и CI сортируют импорты одинаково.
-- Тесты: 88 C++-тестов + 36 Python; АЛУ и MUL проверены перебором всех операндов против оракула.
-- Python-модуль `emulator_backend` собирается и импортируется.
-- HEX: типы записей 00–05, устойчивый разбор (ошибка с номером строки, без UB на битых файлах), EEPROM по
-  `0x810000`, предупреждения о данных вне flash/EEPROM.
-- Дизассемблер в ядре (`core/disasm`), формат как у `avr-objdump`; согласован с декодером по всем 65536 опкодам; в GUI — таблица с подсветкой PC.
-- API модуля: `run()` без GIL и возвращает такты, `stop()` из другого потока, `snapshot()`, блоки памяти и
-  flash, карта памяти, типизированные исключения.
+- Build: CMake presets (`debug`, `release`, `release-python`), CI (debug/release matrix), pre-commit (clang-format, ruff).
+- Core: the complete ATmega328P instruction set, a single cycle counter, reset, hardware-style stack,
+  interrupts (queue, priorities, flag clearing, the "one more instruction" rule), SLEEP.
+- Timer0: Normal/CTC/Fast PWM/Phase Correct, prescalers, TOV0/OCF0A/OCF0B, TIMSK0, three vectors.
+- Unknown I/O registers (0x20–0xFF) are RAZ/WI, with no exception.
+- GUI tests (`tests/python/`): pin logic, controller, Qt widgets (offscreen), integration with the real
+  `emulator_backend`; run in CI (the `gui-tests` job).
+- One `ruff.toml` in the root: the editor, pre-commit and CI sort imports the same way.
+- C++ tests: ALU and MUL are verified by iterating over all operands against an oracle.
+- The Python module `emulator_backend` builds and imports.
+- HEX: record types 00–05, robust parsing (errors with a line number, no UB on broken files), EEPROM at
+  `0x810000`, warnings about data outside flash/EEPROM.
+- A disassembler in the core (`core/disasm`), `avr-objdump`-like output, consistent with the decoder over all
+  65536 opcodes; in the GUI — a table that highlights the PC.
+- Module API: `run()` without the GIL that returns the cycles executed, `stop()` from another thread, `snapshot()`,
+  memory and flash blocks, a memory map, typed exceptions.
 
-## Не реализовано / ограничения
+## Not implemented / limitations
 
-| Что                                                       | Примечание                                                                         |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `SPM`                                                     | выполняется как NOP (запись во flash не моделируется)                              |
-| `WDR`, `BREAK`                                            | NOP; watchdog не моделируется                                                      |
-| Timer0: выводы OC0A/OC0B, FOC0x, внешний тактовый вход T0 | биты COM0xx хранятся, но пины не меняются; CS=110/111 → таймер стоит               |
-| UART, ADC, SPI, TWI, Timer1/2, EEPROM                     | регистры читаются как 0, запись игнорируется                                       |
-| Входы GPIO (`PINx`) и кнопка                              | `Wire` есть, но к GPIO не подключён; `PINx` всегда 0, запись в `PINx` (toggle) нет |
-| Режимы сна                                                | любой `SLEEP` = Idle (периферия работает)                                          |
-| Доступ к данным ≥ 0x900                                   | бросает исключение (в GUI не перехватывается)                                      |
+| What                                                   | Note                                                                                               |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `SPM`                                                  | executes as a NOP (writing to flash is not modeled)                                                |
+| `WDR`, `BREAK`                                         | NOP; the watchdog is not modeled                                                                   |
+| Timer0: OC0A/OC0B pins, FOC0x, external clock input T0 | COM0xx bits are stored but pins do not change; CS=110/111 → the timer stands still                 |
+| UART, ADC, SPI, TWI, Timer1/2, EEPROM                  | registers read as 0, writes are ignored                                                            |
+| GPIO inputs (`PINx`) and the button                    | `Wire` exists but is not connected to GPIO; `PINx` is always 0, writing `PINx` (toggle) is missing |
+| Sleep modes                                            | any `SLEEP` = Idle (peripherals keep running)                                                      |
+| Data access ≥ 0x900                                    | throws an exception (the GUI reports it)                                                           |
 
-## Открытые дефекты (по аудиту)
+## Open issues
 
-D-15 (вход `PINx`);
-частично: D-08, D-19, D-21 (брейкпоинты, события в Python), D-22 (колбэки не экспортированы, EEPROM как
-память), D-23.
+- **GPIO input**: `PINx` for output pins without a connected wire reads 0 (on real hardware it is the pin level);
+  writing 1 to `PINx` (toggle `PORTx`) is not implemented; `Wire` is not exposed to Python.
+- **Debugging**: no breakpoints; PC/memory change events are not exported to Python.
+- **Memory**: unknown-register accesses are silently stored but not logged; the bus uses a `std::map`
+  (a flat table would be faster); `FlashDevice::erase_page/write_page` are declared but not defined.
+- **EEPROM** is not emulated; EEPROM data in a HEX file is dropped with a warning.
 
-## GUI — известные проблемы
+## GUI — known issues
 
-- Run: каждые 16 мс выполняется столько тактов, сколько прошло реального времени × частота МК (16 МГц, `RunPacer`), множитель скорости 1×/0.1×/0.01× в тулбаре. Выполняется в потоке GUI: ядро быстрее реального времени, а потолок кадра (0.1 с) не даёт зависнуть.
-- Ошибки эмулятора показываются диалогом и останавливают Run (`SimController` возвращает `False`, `last_error`).
-- Подписи портов D исправлены на `PD…`; состояние портов B и D читается одним вызовом `get_port_registers()`.
-- Дизассемблер есть (правая панель); нет просмотра памяти и брейкпоинтов; кнопки Start/Pause/Stop — заглушки.
-- `pyproject.toml`: скрипт `gui = "gui:main"` указывает на несуществующую функцию (запуск: `uv run python -m gui.main`).
+- Run: every 16 ms the emulator executes as many cycles as real time elapsed × the MCU clock (16 MHz, `RunPacer`);
+  a speed multiplier 1×/0.1×/0.01× is in the toolbar. It runs in the GUI thread: the core is faster than real
+  time, and the frame cap (0.1 s) prevents freezes.
+- Emulator errors are shown in a dialog and stop Run (`SimController` returns `False`, see `last_error`).
+- A disassembler exists (right panel); there is no memory viewer or breakpoints; the Start/Pause/Stop buttons
+  of the main window are placeholders.
+- `pyproject.toml`: the script `gui = "gui:main"` points to a non-existent function (run with
+  `uv run python -m gui.main`).
 
-## Тестовые прошивки (`tests/data/hex/`)
+## Test firmware (`tests/data/hex/`)
 
-- `firmware.hex` — мигание PB5 (≈628 тыс. тактов на полупериод), входы не читает.
-- `firmware_test.hex` — статический набор уровней на PB0–PB4 и PD2–PD7 (PD2 переключается в цикле). Входы не читает.
+- `firmware.hex` — blinks PB5 (≈628 thousand cycles per half period); does not read inputs.
+- `firmware_test.hex` — a static set of levels on PB0–PB4 and PD2–PD7 (PD2 toggles in a loop). Does not read inputs.
 
-## Ближайшие шаги
+## Next steps
 
-Полный план после MVP — в аудите (раздел 8, Project «mc_emu»). Кратко:
-
-1. Вход GPIO и кнопка (D-15) + тестовая прошивка, читающая кнопку.
-2. Просмотр памяти/I/O; брейкпоинты.
-3. Периферия для реальных скетчей: USART, ADC, Timer1/2, INT0/1, PCINT, EEPROM.
-4. Подготовка к open source: лицензия, удаление PDF Microchip из репозитория, `CONTRIBUTING`, README с примерами,
-   `pyproject.toml` (метаданные, скрипт запуска, `requires-python`), CI на Windows/macOS.
-5. Перевод проекта на английский (README/docs → комментарии → строки GUI → сообщения и тесты).
+1. GPIO input and the button + a test firmware that reads the button.
+2. Memory/I/O viewer; breakpoints.
+3. Peripherals for real sketches: USART, ADC, Timer1/2, INT0/1, PCINT, EEPROM.
+4. Open-source preparation: contributing guide, README with examples and screenshots, `pyproject.toml`
+   (metadata, launch script, `requires-python`), CI on Windows/macOS.
+5. Finish the English translation (code comments, GUI strings, error messages and tests).

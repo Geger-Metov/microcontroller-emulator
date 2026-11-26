@@ -1,65 +1,67 @@
-# Журнал решений
+# Decision log
 
-Формат: решение — причина — что отвергли. Новые записи добавлять сверху.
+Format: decision — reason — what was rejected. Add new entries at the top.
 
-### Timer0 — не `IMemoryMapped`, регистры — отдельные `MMIORegister`
+### Timer0 is not `IMemoryMapped`; its registers are separate `MMIORegister`s
 
-Регистры Timer0 лежат не подряд (TIFR0 `0x35`, TCCR0A–OCR0B `0x44–0x48`, TIMSK0 `0x6E`), а `IMemoryMapped`
-предполагает один непрерывный диапазон. Таймер получает время через `MemoryBus::add_tickable`,
-регистры отображаются по одному. Отвергнуто: один широкий диапазон `0x35–0x6E` с разбором смещений
-(перекрывал бы чужие регистры и fallback для неизвестного I/O).
+Timer0 registers are not contiguous (TIFR0 `0x35`, TCCR0A–OCR0B `0x44–0x48`, TIMSK0 `0x6E`), while
+`IMemoryMapped` assumes one continuous range. The timer gets time through `MemoryBus::add_tickable`,
+and the registers are mapped one by one. Rejected: one wide range `0x35–0x6E` with offset decoding
+(it would overlap other registers and the fallback for unknown I/O).
 
-### Время — через один счётчик тактов
+### Time comes from a single cycle counter
 
-`AVR_CPU::commit_cycles` — единственное место, где копятся такты; оно же даёт число для `MemoryBus::tick`.
-Раньше лишние такты (переходы, пропуски) шли только в общий счётчик, и периферия «жила» на ~25 % медленнее.
+`AVR_CPU::commit_cycles` is the only place where cycles accumulate; it also provides the number passed to
+`MemoryBus::tick`. Previously the extra cycles (taken branches, skips) went only to the total counter, and
+the peripherals "lived" about 25 % slower.
 
-### Прерывания: уровень запроса + набор ожидающих векторов
+### Interrupts: request level + a set of pending vectors
 
-Периферия выставляет `флаг & маска` как уровень; CPU держит `std::set` векторов (меньший адрес = выше приоритет).
-Отвергнуто: один слот `pending_vector` (второе прерывание затирало первое).
+A peripheral raises `flag & mask` as a level; the CPU keeps a `std::set` of vectors (lower address = higher
+priority). Rejected: a single `pending_vector` slot (a second interrupt overwrote the first).
 
-### Декодер — справочник на 65536 опкодов
+### Decoder: a lookup table over all 65536 opcodes
 
-Таблица (mask/pattern) разворачивается при создании; `decode()` — один доступ к массиву. Семантика
-«первое совпадение выигрывает» сохранена. Справочник общий для всех декодеров с одной таблицей.
-Отвергнуто: линейный перебор таблицы на каждую инструкцию.
+The (mask/pattern) table is expanded at construction time; `decode()` is one array access. The
+"first match wins" semantics are preserved. The lookup is shared by all decoders using the same table.
+Rejected: a linear scan of the table for every instruction.
 
-### Неизвестный I/O — RAZ/WI, а не исключение
+### Unknown I/O is RAZ/WI, not an exception
 
-Реальные программы (Arduino `init()`) пишут в регистры, которых нет в модели. Диапазон `0x20–0xFF`
-вне известных устройств читается нулём и игнорирует запись. Адреса за пределами памяти данных по-прежнему
-бросают исключение (это ошибка программы, а не отсутствие периферии).
+Real programs (Arduino `init()`) write to registers that are absent from the model. The range `0x20–0xFF`
+outside known devices reads as zero and ignores writes. Addresses beyond the data memory still throw
+(that is a program error, not a missing peripheral).
 
-### Стек — как в железе
+### Stack as in hardware
 
-`push_pc`: сначала младший байт (старший адрес), потом старший. Нужно, чтобы программы, читающие стек
-напрямую, и отладчик видели привычный порядок.
+`push_pc`: the low byte first (at the higher address), then the high byte. This lets programs that read the
+stack directly, and debuggers, see the familiar order.
 
-### Свой тестовый каркас вместо GoogleTest
+### A custom test framework instead of GoogleTest
 
-В среде разработки не было доступа к сети для загрузки GoogleTest; каркас минимален (`test_framework.h`).
-Можно заменить на GoogleTest/Catch2 позже: тесты используют только `TEST`, `CHECK`, `CHECK_EQ`, `CHECK_THROWS`.
+The development environment had no network access to download GoogleTest; the framework is minimal
+(`test_framework.h`). It can be replaced with GoogleTest/Catch2 later: the tests only use `TEST`, `CHECK`,
+`CHECK_EQ`, `CHECK_THROWS`.
 
-### Проверка АЛУ — оракул на широкой арифметике
+### ALU verification: an oracle on wide arithmetic
 
-Флаги реализации считаются по битовым формулам из мануала, а тесты — через `int` (переполнение, заём,
-знаковый диапазон). Две независимые реализации; тест перебирает все операнды. Отвергнуто: ручные таблицы
-значений (покрывают малую часть).
+The implementation computes flags with bit formulas from the manual, while the tests use `int` arithmetic
+(overflow, borrow, signed range). Two independent implementations; the test iterates over all operands.
+Rejected: hand-written value tables (they cover only a small part).
 
-### Нормализация сборки: CMake-пресеты, C++20, `-Werror`
+### Build normalization: CMake presets, C++20, `-Werror`
 
-C++20 нужен коду (designated initializers); C++23 не даёт ничего существенного. Пресеты (CMake ≥ 3.21):
-`debug` (ASan+UBSan, `-g3 -O0`), `release` (`-O2`), `release-python` (+ модуль для GUI).
-`CMakeUserPresets.json` — личный (абсолютные пути), в git не кладётся.
+The code needs C++20 (designated initializers); C++23 adds nothing significant. Presets (CMake ≥ 3.21):
+`debug` (ASan+UBSan, `-g3 -O0`), `release` (`-O2`), `release-python` (+ the module for the GUI).
+`CMakeUserPresets.json` is personal (absolute paths) and is not committed.
 
-### Остановка `run()` и занятость эмулятора
+### Stopping `run()` and the "busy" state
 
-`pause()`/`stop()` ставят атомарный флаг, который проверяется между инструкциями; флаг сбрасывается в начале
-каждого `run_for_cycles()`, так что «старый» запрос не отменяет следующий запуск. Остальной API на время
-`run()` не блокируется (это дало бы взаимную блокировку с GIL), а бросает `EmulatorBusyError`.
+`pause()`/`stop()` set an atomic flag checked between instructions; the flag is cleared at the start of every
+`run_for_cycles()`, so a stale request does not cancel the next run. The rest of the API does not block while
+`run()` is active (that would deadlock with the GIL); it throws `EmulatorBusyError` instead.
 
-### Free-threaded Python не используется
+### Free-threaded Python is not used
 
-Для отзывчивого GUI достаточно освобождать GIL на время `run()` (`py::gil_scoped_release`). Free-threading —
-отдельная сборка интерпретатора, требует поддержки во всех расширениях, а `Emulator` не потокобезопасен.
+For a responsive GUI it is enough to release the GIL during `run()` (`py::gil_scoped_release`). Free-threading
+is a separate interpreter build, requires support in every extension, and `Emulator` is not thread-safe.
