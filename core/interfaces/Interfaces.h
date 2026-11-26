@@ -5,31 +5,31 @@
 #include <string>
 #include <vector>
 
-// ========== Базовые интерфейсы для устройств на шине ==========
+// ========== Base interfaces for devices on the bus ==========
 
-// Устройство, способное обрабатывать операции чтения/записи по адресу
+// A device that can handle read/write operations by address
 class IMemoryMapped {
 public:
   virtual ~IMemoryMapped() = default;
 
-  // Чтение байта по смещению относительно базового адреса устройства
+  // Read a byte at an offset relative to the device's base address
   virtual uint8_t read(uint32_t offset) const = 0;
 
-  // Запись байта по смещению относительно базового адреса устройства
+  // Write a byte at an offset relative to the device's base address
   virtual void write(uint32_t offset, uint8_t value) = 0;
 
-  // Размер устройства в байтах (необходим для шины)
+  // Device size in bytes (needed by the bus)
   virtual uint32_t size() const = 0;
 };
 
-/// Устройство, которому нужно обновление времени (периферия, таймеры, CPU)
+/// A device that needs time updates (peripherals, timers, CPU)
 class ITickable {
 public:
   virtual ~ITickable() = default;
   virtual void tick(uint64_t cycles) = 0;
 };
 
-// ========== Интерфейс шины памяти ==========
+// ========== Memory bus interface ==========
 class ICodeBus {
 public:
   virtual ~ICodeBus() = default;
@@ -43,61 +43,61 @@ public:
   virtual uint8_t read(uint32_t addr) const = 0;
   virtual void write(uint32_t addr, uint8_t value) = 0;
 
-  // Продвинуть время для всех устройств на шине
+  // Advance time for all devices on the bus
   virtual void tick(uint64_t cycles) = 0;
 };
 
-// Устройство, состояние которого можно вернуть к состоянию после power-on reset
+// A device whose state can be returned to the state after a power-on reset
 class IResettable {
 public:
   virtual ~IResettable() = default;
   virtual void reset() = 0;
 };
 
-// ========== Интерфейс процессорного ядра ==========
+// ========== CPU core interface ==========
 
 class ICPU : public ITickable, public IResettable {
 public:
   virtual ~ICPU() = default;
 
-  // Выполнить одну инструкцию
+  // Execute one instruction
   virtual void step() = 0;
 
-  // Подключить шину (вызывается при конструировании MCU)
-  // У всех ли Гарвардская архитектура?
+  // Attach the bus (called when the MCU is constructed)
+  // Does every architecture have separate code and data buses (Harvard)?
   // virtual void attach_bus(IBus* bus) = 0;
   // virtual void attach_data_bus(IDataBus* bus) = 0;
   // virtual void attach_code_bus(ICodeBus* bus) = 0;
 
-  // Отладочная информация
+  // Debug information
   virtual uint32_t get_pc() const = 0;
   virtual uint32_t get_sp() const = 0;
   virtual uint8_t get_sreg() const = 0;
   virtual const uint8_t *get_registers() const = 0;
 
-  // Вроде как, требуется в EmulatorFacade. Не нарушает ли это установленные
-  // правила?
+  // Apparently needed by EmulatorFacade. Does this violate the established
+  // rules?
   virtual uint64_t get_cycle_count() const = 0;
   virtual uint16_t get_last_instruction_cycles() const = 0;
 };
 
-// ========== Интерфейс отладки для GUI ==========
+// ========== Debug interface for the GUI ==========
 
 class IDebuggable : public IResettable {
 public:
   virtual ~IDebuggable() = default;
 
-  // Доступ к памяти данных (SRAM, регистры, IO)
+  // Data memory access (SRAM, registers, I/O)
   virtual uint64_t read_data(uint32_t addr, uint8_t size) const = 0;
   virtual void write_data(uint32_t addr, uint64_t value, uint8_t size) = 0;
 
-  // Доступ к памяти программ (flash)
+  // Program memory (flash) access
   virtual uint64_t read_program(uint32_t word_addr,
                                 uint8_t num_words) const = 0;
-  // Запись во flash (программирование) — только через специальный метод
+  // Writing to flash (programming) — only through a dedicated method
   virtual void program_flash(uint32_t word_addr,
                              const std::vector<uint16_t> &words) = 0;
-  // Информация о карте памяти (для отображения в GUI)
+  // Memory map information (for display in the GUI)
   struct MemoryRegion {
     std::string name;
     uint32_t start;
@@ -107,40 +107,40 @@ public:
   };
   virtual std::vector<MemoryRegion> get_memory_map() const = 0;
 
-  // Управление симуляцией
-  // Выполняет инструкции, пока не набрано cycle_budget тактов или не вызван
-  // pause()/stop(). Возвращает реально выполненные такты (может быть чуть
-  // больше бюджета: инструкцию нельзя прервать посередине).
+  // Simulation control
+  // Executes instructions until cycle_budget cycles are reached or
+  // pause()/stop() is called. Returns the cycles actually executed (may be
+  // slightly above the budget: an instruction cannot be interrupted midway).
   virtual uint64_t run_for_cycles(uint64_t cycle_budget) = 0;
   virtual void step_instruction() = 0;
-  // Просит текущий run_for_cycles() выйти после ближайшей инструкции.
-  // Единственный метод, который безопасно вызывать из другого потока во время
-  // запуска. Запрос относится только к уже идущему запуску: новый
-  // run_for_cycles() его не видит. Вне запуска ничего не делает.
+  // Asks the current run_for_cycles() to return after the nearest instruction.
+  // The only method that is safe to call from another thread while a run is
+  // in progress. The request applies only to a run already in progress: a new
+  // run_for_cycles() does not see it. Does nothing outside a run.
   virtual void pause() = 0;
-  virtual void stop() = 0; // то же, что pause() (без отдельного состояния)
-  virtual bool is_running() const = 0; // идёт ли сейчас run_for_cycles()
+  virtual void stop() = 0;             // same as pause() (no separate state)
+  virtual bool is_running() const = 0; // is run_for_cycles() in progress
   virtual uint64_t get_cycle_count() const = 0;
 
-  // Колбэки для GUI
+  // GUI callbacks
   using PCCallback = std::function<void(uint32_t)>;
   using MemoryChangedCallback =
       std::function<void(uint32_t addr, uint32_t size)>;
   virtual void set_on_pc_changed(PCCallback cb) = 0;
   virtual void set_on_memory_changed(MemoryChangedCallback cb) = 0;
 
-  // Доступ к CPU для отладки
+  // CPU access for debugging
   virtual uint32_t get_pc() const = 0;
   virtual uint32_t get_sp() const = 0;
   virtual uint8_t get_sreg() const = 0;
   virtual const uint8_t *get_registers() const = 0;
 
-  // Загрузка байт во flash (для инициализации)
+  // Load bytes into flash (for initialization)
   virtual void load_flash_bytes(uint32_t offset, const uint8_t *data,
                                 size_t len) = 0;
 };
 
-// ========== Фасад эмулятора для GUI (объединяет все интерфейсы) ==========
+// ========== Emulator facade for the GUI (combines all interfaces) ==========
 
 class IEmulatorFacade : public IDebuggable {
 public:

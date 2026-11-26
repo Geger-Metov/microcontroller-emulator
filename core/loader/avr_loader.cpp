@@ -13,8 +13,9 @@ std::string hex_addr(uint64_t addr) {
   return buf;
 }
 
-// Если [addr, addr+len) начинается внутри области [base, base+size), копирует
-// данные и возвращает true; если выходит за конец — исключение; иначе false.
+// If [addr, addr+len) starts inside the region [base, base+size), copies
+// the data and returns true; if it runs past the end — an exception; otherwise
+// false.
 bool place(std::vector<uint8_t> &mem, uint32_t base, uint32_t size,
            uint32_t addr, const std::vector<uint8_t> &data, const char *name) {
   const uint64_t begin = base;
@@ -38,7 +39,7 @@ AVRProgramLoader::AVRProgramLoader(const AVRMemoryLayout &layout)
 ProgramImage AVRProgramLoader::load(const HexImage &hex) {
   ProgramImage image;
 
-  // Не записанные ячейки — стёртое состояние (0xFF)
+  // Unwritten cells are in the erased state (0xFF)
   image.flash.assign(layout_.flashSize, 0xFF);
   image.eeprom.assign(layout_.eepromSize, 0xFF);
 

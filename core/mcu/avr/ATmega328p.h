@@ -11,19 +11,19 @@
 class MCUContext;
 class EmulatorFacade;
 
-// Сборка конкретного микроконтроллера ATmega328P
+// Assembly of a concrete ATmega328P microcontroller
 class ATmega328P {
 public:
-  // Создать полностью сконфигурированный эмулятор
+  // Create a fully configured emulator
   static std::unique_ptr<IEmulatorFacade> create();
 
-  // Загрузить Intel HEX во flash. Ошибка формата/переполнения — исключение.
-  // Возвращает предупреждения (данные вне flash, EEPROM не эмулируется).
+  // Load Intel HEX into flash. A format/overflow error is an exception.
+  // Returns warnings (data outside flash, EEPROM is not emulated).
   static std::vector<std::string> load_hex(IEmulatorFacade &facade,
                                            std::istream &hex_stream);
 
 private:
-  // Вспомогательные методы для создания устройств
+  // Helper methods for creating devices
   static std::unique_ptr<MCUContext> build_context();
   static void build_memory_map(MCUContext &ctx);
   static void connect_cpu(MCUContext &ctx);
@@ -31,11 +31,11 @@ private:
 };
 
 /*
-3. Альтернативный, более масштабируемый подход (для будущего)
-Если вы планируете поддерживать много разных AVR-микроконтроллеров или даже
-других архитектур, статический метод в каждом классе-сборщике приведёт к
-дублированию. Можно вынести логику загрузки в отдельный сервис, параметризуемый
-раскладкой памяти:
+Design note: a more scalable approach (for the future)
+If you plan to support many different AVR microcontrollers or even
+other architectures, a static method in every assembly class leads to
+duplication. The loading logic can be moved into a separate service
+parameterized by the memory layout:
 
 cpp
 class HexLoaderService {
@@ -50,6 +50,7 @@ public:
         facade.load_flash_bytes(0, prog.flash.data(), prog.flash.size());
     }
 };
-Тогда в ATmega328P останется только вызов сервиса с правильным layout. Это
-полностью убирает дублирование и оставляет классу-сборщику лишь конфигурацию.
+Then ATmega328P only has to call the service with the right layout. This
+removes the duplication entirely and leaves the assembly class with
+configuration only.
 */

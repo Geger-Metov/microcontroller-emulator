@@ -8,7 +8,7 @@
 
 #include "interfaces/Interfaces.h"
 
-// Чистое процессорное ядро
+// A pure processor core
 /**
  * @note
  * Interrupt entry timing is simplified: entry always costs 4 cycles
@@ -32,7 +32,7 @@ public:
   // ICPU
   void step() override;
   void reset() override;
-  // может быть пустым, если у CPU нет внутренней задержки
+  // may be empty if the CPU has no internal delay
   void tick(uint64_t cycles) override;
 
   void attach_data_bus(IDataBus *bus) { data_bus_ = bus; }
@@ -40,7 +40,7 @@ public:
   void set_register_file(IRegisterFile *rf) { regfile_ = rf; }
   void set_sreg_device(ISREG *sreg) { sreg_ = sreg; }
 
-  // Отладка
+  // Debugging
   uint32_t get_pc() const override { return pc_; }
   uint32_t get_sp() const override { return sp_; }
   uint8_t get_sreg() const override { return sreg_->value(); }
@@ -48,30 +48,30 @@ public:
     return regfile_ ? &regfile_->ref(0) : nullptr;
   }
 
-  // Очередной accessor
+  // Yet another accessor
   IRegisterFile &registers() { return *regfile_; }
   const IRegisterFile &registers() const { return *regfile_; }
   ICodeBus &code_bus() { return *code_bus_; }
   const ICodeBus &code_bus() const { return *code_bus_; }
 
-  // Специфичные для AVR методы, используемые обработчиками инструкций
+  // AVR-specific methods used by instruction handlers
   void set_flag(uint8_t flag, bool value);
   bool get_flag(uint8_t flag) const;
   void set_initial_sp(uint16_t sp) { initial_sp_ = sp; }
 
   /**
-   * Добавить такты к ТЕКУЩЕЙ инструкции (взятый переход, пропуск и т.п.).
-   * Итоговая стоимость инструкции = desc->cycles + добавленные такты;
-   * именно она возвращается в get_last_instruction_cycles() и попадает и в
-   * общий счётчик, и в тики периферии.
+   * Add cycles to the CURRENT instruction (a taken branch, a skip, etc.).
+   * The final cost of an instruction = desc->cycles + the added cycles;
+   * that is what get_last_instruction_cycles() returns, and it goes both to
+   * the total counter and to the peripheral ticks.
    */
   void add_cycles(uint16_t n) { extra_cycles_ += n; }
   uint64_t get_cycle_count() const override { return total_cycles_; }
 
-  /// После SEI/RETI следующая инструкция выполняется до обработки прерывания.
+  /// After SEI/RETI the next instruction executes before an interrupt is taken.
   void inhibit_interrupts_for_next_instruction() { irq_inhibit_ = true; }
 
-  /// SLEEP: остановить выполнение до прерывания (периферия продолжает тикать).
+  /// SLEEP: halt execution until an interrupt (peripherals keep ticking).
   void enter_sleep() { sleeping_ = true; }
   bool is_sleeping() const { return sleeping_; }
 
@@ -90,8 +90,8 @@ public:
   void push8(uint8_t val);
   uint8_t pop8();
 
-  /// Адрес возврата кладётся как на реальном AVR: сначала младший байт
-  /// (по большему адресу), затем старший.
+  /// The return address is pushed as on a real AVR: the low byte first
+  /// (at the higher address), then the high byte.
   void push_pc(uint32_t pc);
   uint32_t pop_pc();
 
@@ -103,7 +103,7 @@ public:
   }
 
 private:
-  IDataBus *data_bus_ = nullptr; // Подключается извне
+  IDataBus *data_bus_ = nullptr; // Attached from outside
   ICodeBus *code_bus_ = nullptr;
   IRegisterFile *regfile_ = nullptr;
   ISREG *sreg_ = nullptr;
@@ -117,8 +117,8 @@ private:
   uint16_t extra_cycles_ = 0;
   std::unique_ptr<IDecoder> decoder_;
 
-  // Прерывания. Меньший адрес вектора = выше приоритет, поэтому упорядоченное
-  // множество даёт нужную очерёдность «из коробки».
+  // Interrupts. A lower vector address = a higher priority, so an ordered
+  // set gives the needed order "out of the box".
   std::set<uint16_t> pending_interrupts_;
   std::map<uint16_t, std::function<void()>> interrupt_ack_;
   bool irq_inhibit_ = false;

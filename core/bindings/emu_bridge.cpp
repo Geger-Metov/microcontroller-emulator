@@ -1,8 +1,8 @@
 #include <atomic>
 #include <fstream>
-#include <pybind11/functional.h> // если потребуются колбэки
+#include <pybind11/functional.h> // in case callbacks are needed
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h> // для std::vector ↔ list
+#include <pybind11/stl.h> // for std::vector ↔ list
 
 #include "common/errors.h"
 #include "disasm/avr_disasm.h"
@@ -11,18 +11,18 @@
 namespace py = pybind11;
 
 /**
- * Удобная Python-обёртка над IEmulatorFacade.
- * Владеет всем эмулятором и предоставляет интуитивные методы.
+ * A convenient Python wrapper over IEmulatorFacade.
+ * Owns the whole emulator and provides intuitive methods.
  *
- * Потоки: run() отпускает GIL, поэтому его можно запускать из рабочего потока,
- * не замораживая интерфейс. Пока run() идёт, остальные методы (кроме stop() и
- * is_running()) бросают EmulatorBusyError — состояние эмулятора в это время
- * меняется и читать его небезопасно.
+ * Threads: run() releases the GIL, so it can be started from a worker thread
+ * without freezing the UI. While run() is active, the other methods (except
+ * stop() and is_running()) throw EmulatorBusyError: the emulator state is
+ * changing at that time and reading it is not safe.
  */
 class EmulatorWrapper {
 public:
   EmulatorWrapper() {
-    facade_ = ATmega328P::create(); // создаём готовый эмулятор
+    facade_ = ATmega328P::create(); // create a ready emulator
   }
 
   void step() {
@@ -30,8 +30,8 @@ public:
     facade_->step_instruction();
   }
 
-  // Выполняет инструкции, пока не набрано `cycles` тактов или не вызван stop().
-  // Возвращает фактически выполненные такты.
+  // Executes instructions until `cycles` cycles are reached or stop() is
+  // called. Returns the cycles actually executed.
   uint64_t run(uint64_t cycles) {
     if (busy_.exchange(true))
       throw EmulatorBusyError("Emulator is busy: run() is already in progress");
@@ -40,14 +40,14 @@ public:
       ~BusyReset() { flag = false; }
     } busy_reset{busy_};
 
-    // Деструкторы идут в обратном порядке: сначала вернётся GIL, потом
-    // сбросится busy_ — исключение из ядра доедет до Python корректно.
+    // Destructors run in reverse order: the GIL comes back first, then
+    // busy_ is cleared — an exception from the core reaches Python correctly.
     py::gil_scoped_release release;
     return facade_->run_for_cycles(cycles);
   }
 
-  // Просит идущий run() выйти после ближайшей инструкции. Безопасно звать из
-  // другого потока; вне run() ничего не делает.
+  // Asks a running run() to return after the nearest instruction. Safe to call
+  // from another thread; does nothing outside run().
   void stop() { facade_->pause(); }
   bool is_running() const { return busy_; }
 
@@ -77,7 +77,7 @@ public:
     return std::vector<uint8_t>(regs, regs + 32);
   }
 
-  // Всё состояние CPU одним вызовом.
+  // The whole CPU state in one call.
   py::dict snapshot() {
     check_idle();
     py::dict d;
@@ -89,7 +89,7 @@ public:
     return d;
   }
 
-  // Чтение / запись байта в памяти данных
+  // Read / write a byte of data memory
   uint8_t read_memory(uint32_t addr) {
     check_idle();
     return static_cast<uint8_t>(facade_->read_data(addr, 1) & 0xFF);
@@ -99,8 +99,8 @@ public:
     facade_->write_data(addr, value, 1);
   }
 
-  // Блок памяти данных как bytes (адреса подряд; неотображённый → ошибка).
-  // Это отладочное чтение: оно проходит через шину, как обычное.
+  // A block of data memory as bytes (consecutive addresses; unmapped → error).
+  // This is a debug read: it goes through the bus like a normal one.
   py::bytes read_memory_block(uint32_t addr, uint32_t length) {
     check_idle();
     std::string out;
@@ -110,13 +110,13 @@ public:
     return py::bytes(out);
   }
 
-  // Чтение слова из флеша
+  // Read a word from flash
   uint16_t read_program_word(uint32_t word_addr) {
     check_idle();
     return static_cast<uint16_t>(facade_->read_program(word_addr, 1) & 0xFFFF);
   }
 
-  // Блок flash как bytes по байтовому адресу (little-endian внутри слова).
+  // A block of flash as bytes by byte address (little-endian within a word).
   py::bytes read_flash(uint32_t byte_addr, uint32_t length) {
     check_idle();
     std::string out;
@@ -130,9 +130,9 @@ public:
     return py::bytes(out);
   }
 
-  // Дизассемблирует до `count` инструкций начиная со слова `word_addr`.
-  // Возвращает [{addr (слова), size (слов), words, text, known}]; доходит до
-  // конца flash и останавливается. Адреса переходов в text — байтовые.
+  // Disassembles up to `count` instructions starting at word `word_addr`.
+  // Returns [{addr (words), size (words), words, text, known}]; stops at the
+  // end of flash. Jump addresses in text are byte addresses.
   py::list disassemble(uint32_t word_addr, uint32_t count) {
     check_idle();
     py::list rows;
@@ -142,13 +142,13 @@ public:
       try {
         w0 = static_cast<uint16_t>(facade_->read_program(addr, 1) & 0xFFFF);
       } catch (const MemoryAccessError &) {
-        break; // конец flash
+        break; // end of flash
       }
       uint16_t w1 = 0xFFFF;
       try {
         w1 = static_cast<uint16_t>(facade_->read_program(addr + 1, 1) & 0xFFFF);
       } catch (const MemoryAccessError &) {
-        // последняя инструкция flash: второго слова нет
+        // the last instruction of flash: there is no second word
       }
       const avr::Disassembled d = avr::disassemble(w0, w1, addr);
       py::list words;
@@ -167,7 +167,7 @@ public:
     return rows;
   }
 
-  // Регионы пространства данных: [{name, start, end, readable, writable}].
+  // Data-space regions: [{name, start, end, readable, writable}].
   py::list get_memory_map() {
     check_idle();
     py::list regions;
@@ -183,8 +183,8 @@ public:
     return regions;
   }
 
-  // Загрузка hex‑файла. Возвращает список предупреждений (например, данные
-  // fuse-битов, которые эмулятору не нужны). Ошибка формата — HexFormatError.
+  // Load a hex file. Returns a list of warnings (for example fuse-bit data
+  // that the emulator does not need). A format error is a HexFormatError.
   std::vector<std::string> load_hex(const std::string &path) {
     check_idle();
     std::ifstream file(path);
@@ -209,12 +209,12 @@ private:
   std::atomic<bool> busy_{false};
 };
 
-// Сам модуль Python
+// The Python module itself
 PYBIND11_MODULE(emulator_backend, m) {
   m.doc() = "AVR MCU Emulator Backend";
 
-  // Типизированные исключения: GUI отличает ошибки прошивки от прочих.
-  // Базовый класс регистрируется первым — производные проверяются раньше него.
+  // Typed exceptions: the GUI tells firmware errors from the rest.
+  // The base class is registered first — derived ones are checked before it.
   auto &base = py::register_exception<EmulatorError>(m, "EmulatorError");
   py::register_exception<IllegalInstructionError>(m, "IllegalInstructionError",
                                                   base.ptr());

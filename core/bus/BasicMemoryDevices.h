@@ -7,7 +7,7 @@
 
 #include "interfaces/Interfaces.h"
 
-// Статическое ОЗУ (SRAM)
+// Static RAM (SRAM)
 class SRAMDevice : public IMemoryMapped, public IResettable {
 public:
   explicit SRAMDevice(size_t size_bytes)
@@ -27,7 +27,7 @@ public:
 
   uint32_t size() const override { return size_; }
 
-  // Power-on reset: содержимое SRAM обнуляется (детерминированное состояние).
+  // Power-on reset: the SRAM contents are zeroed (a deterministic state).
   void reset() override { std::fill(data_.begin(), data_.end(), 0); }
 
 private:
@@ -35,7 +35,7 @@ private:
   uint32_t size_;
 };
 
-// Flash-память (только чтение через шину)
+// Flash memory (read-only through the bus)
 class FlashDevice : public IMemoryMapped {
 public:
   explicit FlashDevice(size_t size_bytes)

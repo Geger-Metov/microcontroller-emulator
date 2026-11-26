@@ -1,5 +1,5 @@
-# clangd (его использует Zed) берёт флаги компиляции отсюда.
-# База создаётся командой `cmake --preset release-python ...` — в ней есть и ядро,
-# и тесты, и bindings/emu_bridge.cpp.
+# clangd (used by Zed) takes the compile flags from here.
+# The database is created by `cmake --preset release-python ...` — it contains the core,
+# the tests and bindings/emu_bridge.cpp.
 CompileFlags:
   CompilationDatabase: build/release-python

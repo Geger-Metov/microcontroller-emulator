@@ -5,22 +5,22 @@
 #include "hex_parser/hex_parser.h"
 
 /**
- * Универсальное представление загруженной программы
+ * A universal representation of a loaded program
  */
 struct ProgramImage {
   std::vector<uint8_t> flash;
   std::vector<uint8_t> eeprom;
 
-  // Что загрузчик не смог разместить (не ошибка, но пользователю стоит знать),
-  // например данные fuse/lock-битов.
+  // What the loader could not place (not an error, but the user should know),
+  // for example fuse/lock-bit data.
   std::vector<std::string> warnings;
 
-  // опционально:
+  // optional:
   uint32_t entryPoint = 0;
 };
 
 /**
- * Интерфейс загрузчика программы
+ * The program loader interface
  */
 class IProgramLoader {
 public:

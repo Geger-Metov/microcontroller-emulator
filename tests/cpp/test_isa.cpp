@@ -1,5 +1,5 @@
-// Направленные тесты набора инструкций: адресация LD/ST, LPM, стек, биты SREG,
-// ветвления, пропуски, SLEEP, такты, таблица декодера.
+// Directed instruction-set tests: LD/ST addressing, LPM, the stack, SREG bits,
+// branches, skips, SLEEP, cycles, the decoder table.
 #include "cpu/avr_instructions.h"
 #include "decoder/avr_decoder.h"
 #include "test_framework.h"
@@ -44,7 +44,7 @@ TEST(decoder_table_entries_never_overlap) {
 }
 
 TEST(decoder_recognises_exactly_the_328p_opcode_space) {
-  // Ориентир: у ATmega328P нет ELPM/EIJMP/EICALL/DES/XCH/LAS/LAC/LAT.
+  // Reference: the ATmega328P has no ELPM/EIJMP/EICALL/DES/XCH/LAS/LAC/LAT.
   AVRDecoder dec(avr::avre_plus_instruction_table,
                  avr::avre_plus_instruction_table_size);
   avr::DecodedInstruction d;
@@ -57,7 +57,7 @@ TEST(decoder_recognises_exactly_the_328p_opcode_space) {
 }
 
 TEST(illegal_opcode_throws) {
-  auto emu = make_emu({{0, {0x95D8}}}); // ELPM: нет на ATmega328P
+  auto emu = make_emu({{0, {0x95D8}}}); // ELPM: not on the ATmega328P
   CHECK_THROWS(emu->step_instruction());
 }
 
@@ -65,13 +65,13 @@ TEST(jmp_and_call_decode_all_22_address_bits) {
   AVRDecoder dec(avr::avre_plus_instruction_table,
                  avr::avre_plus_instruction_table_size);
   avr::DecodedInstruction d;
-  // JMP k=0x3FFFFF: первое слово 0x95FD, второе 0xFFFF
+  // JMP k=0x3FFFFF: first word 0x95FD, second 0xFFFF
   CHECK(dec.decode(0xFFFF95FDu, d) != nullptr);
   CHECK_EQ(d.imm, 0x3FFFFFu);
-  // CALL k=0x20000 (бит 17): k[21:17] лежат в битах 8..4 первого слова
+  // CALL k=0x20000 (bit 17): k[21:17] sit in bits 8..4 of the first word
   CHECK(dec.decode(0x0000941Eu, d) != nullptr);
   CHECK_EQ(d.imm, 0x20000u);
-  // CALL k=0x10000 (бит 16): бит 0 первого слова
+  // CALL k=0x10000 (bit 16): bit 0 of the first word
   CHECK(dec.decode(0x0000940Fu, d) != nullptr);
   CHECK_EQ(d.imm, 0x10000u);
   CHECK(dec.decode(0x0010940Cu, d) != nullptr);
@@ -79,7 +79,7 @@ TEST(jmp_and_call_decode_all_22_address_bits) {
 }
 
 TEST(ld_st_indirect_addressing_modes) {
-  // Значения в соседних ячейках разные, чтобы ошибка на 1 в адресе была видна.
+  // Neighboring cells hold different values so an off-by-one address shows.
   auto emu =
       make_emu({{0,
                  {ldi(26, 0x00), ldi(27, 0x01), // X = 0x0100
@@ -93,7 +93,7 @@ TEST(ld_st_indirect_addressing_modes) {
   steps(*emu, 10);
   CHECK_EQ(emu->read_data(SRAM, 1), 0x11u);
   CHECK_EQ(emu->read_data(SRAM + 1, 1), 0x11u);
-  CHECK_EQ(emu->read_data(SRAM + 2, 1), 0x00u); // за пределы не писали
+  CHECK_EQ(emu->read_data(SRAM + 2, 1), 0x00u); // nothing was written outside
   CHECK_EQ(emu->read_data(19, 1), 0x22u);
   CHECK_EQ(emu->read_data(18, 1), 0x22u);
   CHECK_EQ(emu->read_data(20, 1), 0x22u);
@@ -102,7 +102,7 @@ TEST(ld_st_indirect_addressing_modes) {
 }
 
 TEST(ld_st_y_and_z_with_displacement) {
-  // Y = 0x0120, Z = 0x0140; q-смещения 0, 5, 63 покрывают все биты q.
+  // Y = 0x0120, Z = 0x0140; q displacements 0, 5, 63 cover all q bits.
   std::vector<uint16_t> prog = {ldi(28, 0x20), ldi(29, 0x01), ldi(30, 0x40),
                                 ldi(31, 0x01), ldi(16, 0xA0), ldi(17, 0xB1),
                                 ldi(18, 0xC2)};
@@ -124,7 +124,7 @@ TEST(ld_st_y_and_z_with_displacement) {
   CHECK_EQ(emu->read_data(21, 1), 0xA0u);
   CHECK_EQ(emu->read_data(22, 1), 0xC2u);
   CHECK_EQ(emu->read_data(23, 1), 0xA0u);
-  // указатели при смещении не меняются
+  // pointers do not change with a displacement
   CHECK_EQ(emu->read_data(28, 1), 0x20u);
   CHECK_EQ(emu->read_data(30, 1), 0x40u);
 }
@@ -157,7 +157,7 @@ TEST(lds_sts_use_second_word_as_address) {
   steps(*emu, 3);
   CHECK_EQ(emu->read_data(0x123, 1), 0x77u);
   CHECK_EQ(emu->read_data(17, 1), 0x77u);
-  CHECK_EQ(emu->get_pc(), 5u); // обе 2-словные инструкции продвинули PC на 2
+  CHECK_EQ(emu->get_pc(), 5u); // both 2-word instructions advanced PC by 2
 }
 
 TEST(lpm_reads_low_and_high_flash_bytes) {
@@ -184,7 +184,8 @@ TEST(push_pop_roundtrip_and_stack_pointer) {
   uint32_t sp0 = emu->get_sp();
   steps(*emu, 4);
   CHECK_EQ(emu->get_sp(), sp0 - 2);
-  CHECK_EQ(emu->read_data(sp0, 1), 0x11u); // первый push по старшему адресу
+  CHECK_EQ(emu->read_data(sp0, 1),
+           0x11u); // the first push goes to the higher address
   CHECK_EQ(emu->read_data(sp0 - 1, 1), 0x22u);
   steps(*emu, 2);
   CHECK_EQ(emu->get_sp(), sp0);
@@ -223,7 +224,7 @@ TEST(bst_bld_transfer_bits_through_t_flag) {
 TEST(branches_on_every_sreg_bit_forward_and_backward) {
   for (int s = 0; s < 8; ++s) {
     for (int flag = 0; flag < 2; ++flag) {
-      // BRBS: переход при flag==1, BRBC: при flag==0
+      // BRBS: branch when flag==1, BRBC: when flag==0
       for (int is_brbs = 0; is_brbs < 2; ++is_brbs) {
         bool taken = is_brbs ? flag == 1 : flag == 0;
         uint16_t fwd = is_brbs ? brbs(s, 2) : brbc(s, 2);
@@ -233,7 +234,7 @@ TEST(branches_on_every_sreg_bit_forward_and_backward) {
         CHECK_EQ(emu->get_pc(), taken ? 3u : 1u);
         CHECK_EQ(emu->get_cycle_count(), taken ? 2u : 1u);
 
-        // назад: rjmp на слово 4, там ветвление на -3 -> слово 2
+        // backwards: rjmp to word 4, there a branch by -3 -> word 2
         uint16_t bwd = is_brbs ? brbs(s, -3) : brbc(s, -3);
         auto emu2 = make_emu({{0, {rjmp(3), NOP, NOP, NOP, bwd}}});
         emu2->write_data(SREG, flag << s, 1);
@@ -246,21 +247,21 @@ TEST(branches_on_every_sreg_bit_forward_and_backward) {
 }
 
 TEST(skip_on_register_and_io_bits_costs_one_or_two_extra_cycles) {
-  const uint16_t two_word = 0x940C; // JMP k (второе слово — адрес)
+  const uint16_t two_word = 0x940C; // JMP k (the second word is the address)
   struct Case {
     uint16_t skip_op;
-    uint8_t reg_val; // значение r16 / PORTB
+    uint8_t reg_val; // the value of r16 / PORTB
     bool skipped;
   };
   const Case cases[] = {
       {static_cast<uint16_t>(0xFC00 | (16 << 4) | 3), 0x08,
-       false}, // sbrc, бит=1
+       false}, // sbrc, bit=1
       {static_cast<uint16_t>(0xFC00 | (16 << 4) | 3), 0x00,
-       true}, // sbrc, бит=0
+       true}, // sbrc, bit=0
       {static_cast<uint16_t>(0xFE00 | (16 << 4) | 3), 0x08,
-       true}, // sbrs, бит=1
+       true}, // sbrs, bit=1
       {static_cast<uint16_t>(0xFE00 | (16 << 4) | 3), 0x00,
-       false},                             // sbrs, бит=0
+       false},                             // sbrs, bit=0
       {0x9900 | (5 << 3) | 3, 0x00, true}, // sbic PORTB,3
       {0x9900 | (5 << 3) | 3, 0x08, false},
       {0x9B00 | (5 << 3) | 3, 0x08, true}, // sbis PORTB,3
@@ -294,30 +295,31 @@ TEST(skip_on_register_and_io_bits_costs_one_or_two_extra_cycles) {
 }
 
 TEST(sei_lets_one_instruction_run_before_pending_interrupt) {
-  // TOV0 успевает выставиться до SEI; прерывание должно ждать одну инструкцию.
+  // TOV0 gets set before SEI; the interrupt must wait one instruction.
   std::vector<Chunk> chunks = {
       {0, {NOP, NOP, NOP, 0x9478 /*sei*/, NOP, NOP, rjmp(-1)}}, {0x20, {RETI}}};
   auto emu = make_emu(chunks);
   emu->write_data(TIMSK0, 1, 1);
   emu->write_data(TCNT0, 0xFF, 1);
   emu->write_data(TCCR0B, 1, 1);
-  steps(*emu, 3); // три NOP: таймер переполнился, но I=0
+  steps(*emu, 3); // three NOPs: the timer overflowed, but I=0
   CHECK_EQ(emu->get_pc(), 3u);
   emu->step_instruction(); // SEI
   CHECK_EQ(emu->get_pc(), 4u);
-  emu->step_instruction(); // NOP после SEI — выполняется, затем вход в ISR
+  emu->step_instruction(); // the NOP after SEI executes, then the ISR is
+                           // entered
   CHECK_EQ(emu->get_pc(), 0x20u);
 }
 
 TEST(sleep_halts_core_but_peripherals_keep_running) {
   auto emu = make_emu({{0, {0x9588 /*sleep*/, NOP, rjmp(-1)}}});
   emu->write_data(TCCR0B, 1, 1); // clk/1
-  emu->step_instruction();       // SLEEP: 1 такт
+  emu->step_instruction();       // SLEEP: 1 cycle
   CHECK_EQ(emu->get_pc(), 1u);
   uint64_t c0 = emu->get_cycle_count();
   for (int i = 0; i < 100; ++i)
     emu->step_instruction();
-  CHECK_EQ(emu->get_pc(), 1u); // ядро стоит
+  CHECK_EQ(emu->get_pc(), 1u); // the core is stalled
   CHECK_EQ(emu->get_cycle_count() - c0, 100u);
   CHECK_EQ(emu->read_data(TCNT0, 1), emu->get_cycle_count() % 256);
 }
@@ -336,7 +338,7 @@ TEST(sleep_wakes_on_enabled_interrupt_and_returns_after_sleep) {
     emu->step_instruction();
   CHECK_EQ(emu->get_pc(), 0x20u);
   CHECK_EQ(emu->get_sp(), sp0 - 2);
-  // адрес возврата — слово 2, т.е. инструкция сразу ПОСЛЕ SLEEP
+  // the return address is word 2, i.e. the instruction right AFTER SLEEP
   CHECK_EQ(emu->read_data(sp0, 1), 2u);
   CHECK_EQ(emu->read_data(sp0 - 1, 1), 0u);
   emu->step_instruction(); // RETI
@@ -351,13 +353,13 @@ TEST(sleep_wakes_without_vector_when_global_interrupts_disabled) {
   int guard = 0;
   while (emu->read_data(16, 1) != 7 && guard++ < 100)
     emu->step_instruction();
-  CHECK_EQ(emu->read_data(16, 1), 7u); // выполнилась инструкция после SLEEP
-  CHECK(emu->get_pc() != 0x20u);       // в вектор не уходили (I=0)
+  CHECK_EQ(emu->read_data(16, 1), 7u); // the instruction after SLEEP executed
+  CHECK(emu->get_pc() != 0x20u);       // the vector was not entered (I=0)
 }
 
 TEST(sleep_does_not_wake_on_disabled_interrupt_source) {
   auto emu = make_emu({{0, {0x9588, ldi(16, 7), rjmp(-1)}}});
-  emu->write_data(TIMSK0, 0, 1); // TOIE0 выключен
+  emu->write_data(TIMSK0, 0, 1); // TOIE0 disabled
   emu->write_data(TCNT0, 250, 1);
   emu->write_data(TCCR0B, 1, 1);
   steps(*emu, 2000);
@@ -369,17 +371,17 @@ TEST(reset_clears_sleep_state) {
   auto emu = make_emu({{0, {ldi(16, 7), 0x9588, rjmp(-1)}}});
   steps(*emu, 2); // ldi, sleep
   steps(*emu, 10);
-  CHECK_EQ(emu->get_pc(), 2u); // ядро спит
+  CHECK_EQ(emu->get_pc(), 2u); // the core is asleep
   emu->reset();
   CHECK_EQ(emu->read_data(16, 1), 0u);
-  emu->step_instruction(); // после reset выполняется ldi, а не «спим дальше»
+  emu->step_instruction(); // after reset ldi executes, not "keep sleeping"
   CHECK_EQ(emu->read_data(16, 1), 7u);
 }
 
 TEST(documented_instruction_cycle_counts) {
   struct Case {
     const char *name;
-    std::vector<uint16_t> insn; // тестируемая инструкция (1–2 слова)
+    std::vector<uint16_t> insn; // the instruction under test (1-2 words)
     unsigned cycles;
   };
   const std::vector<Case> cases = {
@@ -415,7 +417,7 @@ TEST(documented_instruction_cycle_counts) {
   for (const Case &c : cases) {
     std::vector<uint16_t> prog = {ldi(26, 0x00),   ldi(27, 0x01), ldi(28, 0x00),
                                   ldi(29, 0x01),   ldi(30, 0x00), ldi(31, 0x00),
-                                  ldst(0x920F, 16)}; // push — чтобы работал pop
+                                  ldst(0x920F, 16)}; // push — so that pop works
     prog.insert(prog.end(), c.insn.begin(), c.insn.end());
     auto emu = make_emu({{0, prog}});
     steps(*emu, 7);
@@ -430,12 +432,12 @@ TEST(documented_instruction_cycle_counts) {
 }
 
 TEST(call_ret_roundtrip_costs_documented_cycles) {
-  // call 4 ; (слово 2: nop) ; слово 4: ret
+  // call 4 ; (word 2: nop) ; word 4: ret
   auto emu = make_emu({{0, {0x940E, 0x0004, NOP, NOP, 0x9508}}});
   emu->step_instruction();
   CHECK_EQ(emu->get_pc(), 4u);
   CHECK_EQ(emu->get_cycle_count(), 4u);
   emu->step_instruction();
-  CHECK_EQ(emu->get_pc(), 2u); // возврат после двухсловного CALL
+  CHECK_EQ(emu->get_pc(), 2u); // return after a two-word CALL
   CHECK_EQ(emu->get_cycle_count(), 8u);
 }

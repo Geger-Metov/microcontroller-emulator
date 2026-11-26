@@ -5,7 +5,7 @@
 #include <vector>
 
 /**
- * Тип записи Intel HEX
+ * Intel HEX record type
  */
 enum class HexRecordType : uint8_t {
   Data = 0x00,
@@ -17,30 +17,30 @@ enum class HexRecordType : uint8_t {
 };
 
 /**
- * Одна запись HEX файла (после парсинга строки)
+ * A single record of a HEX file (after parsing a line)
  */
 struct HexRecord {
   HexRecordType type;
-  uint32_t address; // уже с учётом extended address
+  uint32_t address; // already accounting for the extended address
   std::vector<uint8_t> data;
 };
 
 /**
- * Результат парсинга HEX
+ * The result of parsing a HEX file
  */
 struct HexImage {
   std::vector<HexRecord> records;
 };
 
 /**
- * Парсер Intel HEX.
+ * An Intel HEX parser.
  *
- * Любая ошибка формата — std::runtime_error с номером строки и причиной.
- * Допустимы пробелы/табы по краям строки, CRLF, пустые строки, строчные
- * hex-цифры. Поддерживаются записи 00–05; адреса из записей 02 (сегмент * 16) и
- * 04 (линейный, старшие 16 бит) учитываются в HexRecord::address.
- * Разбор останавливается на первой записи EndOfFile (остаток файла
- * игнорируется).
+ * Any format error is a HexFormatError with the line number and the reason.
+ * Spaces/tabs at the ends of a line, CRLF, empty lines and lowercase
+ * hex digits are allowed. Record types 00–05 are supported; addresses from
+ * records 02 (segment * 16) and 04 (linear, the upper 16 bits) are accounted
+ * for in HexRecord::address. Parsing stops at the first EndOfFile record (the
+ * rest of the file is ignored).
  */
 class HexParser {
 public:

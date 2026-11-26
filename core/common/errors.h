@@ -2,33 +2,33 @@
 
 #include <stdexcept>
 
-// Типизированные ошибки эмулятора. Python-модуль превращает их в
-// одноимённые исключения (emulator_backend.IllegalInstructionError и т. д.),
-// чтобы GUI мог отличить «битую прошивку» от внутренней ошибки.
+// Typed emulator errors. The Python module turns them into
+// exceptions of the same name (emulator_backend.IllegalInstructionError etc.),
+// so that the GUI can tell a "broken firmware" from an internal error.
 
-// Общий базовый класс ошибок эмулятора (в Python:
+// The common base class of emulator errors (in Python:
 // emulator_backend.EmulatorError).
 struct EmulatorError : std::runtime_error {
   using std::runtime_error::runtime_error;
 };
 
-// Попытка выполнить опкод, которого нет в ATmega328P.
+// An attempt to execute an opcode that does not exist on the ATmega328P.
 struct IllegalInstructionError : EmulatorError {
   using EmulatorError::EmulatorError;
 };
 
-// Обращение к адресу, где нет устройства/памяти (данные или flash).
-// Наследует std::out_of_range, чтобы прежний код, ловивший его, работал.
+// An access to an address where there is no device/memory (data or flash).
+// Inherits std::out_of_range so that older code catching it keeps working.
 struct MemoryAccessError : std::out_of_range {
   using std::out_of_range::out_of_range;
 };
 
-// Неверный формат Intel HEX или данные не помещаются в память МК.
+// An invalid Intel HEX format, or data that does not fit into the MCU memory.
 struct HexFormatError : EmulatorError {
   using EmulatorError::EmulatorError;
 };
 
-// Вызов, недопустимый, пока в другом потоке идёт run().
+// A call that is not allowed while run() is in progress in another thread.
 struct EmulatorBusyError : EmulatorError {
   using EmulatorError::EmulatorError;
 };

@@ -11,19 +11,20 @@
 #include "interfaces/Interfaces.h"
 
 /**
- * Шина памяти:
- * - владеет mapping адресов → устройств
- * - НЕ владеет самими устройствами
- * - маршрутизирует read/write
- * - тикает устройства, поддерживающие ITickable
+ * Memory bus:
+ * - owns the address → device mapping
+ * - does NOT own the devices themselves
+ * - routes read/write
+ * - ticks devices that support ITickable
  */
 class MemoryBus : public IDataBus {
 public:
   MemoryBus() = default;
 
   /**
-   * @brief Зарегистрировать устройство в диапазоне [start, end] (включительно)
-   * @warning bus не владеет устройством (lifetime(ЖЦ) управляется MCU)
+   * @brief Register a device over the range [start, end] (inclusive)
+   * @warning the bus does not own the device (its lifetime is managed by the
+   * MCU)
    */
   void map(uint32_t start, uint32_t end, IMemoryMapped *dev) {
     if (start > end) {
@@ -35,7 +36,7 @@ public:
       throw std::logic_error("MemoryBus::map size mismatch");
     }
 
-    // Проверка на пересечение диапазонов
+    // Check for overlapping ranges
     for (const auto &[r_start, info] : devices_) {
       if (!(end < r_start || start > info.end)) {
         throw std::logic_error("MemoryBus::map: overlapping ranges");
@@ -44,16 +45,16 @@ public:
 
     devices_[start] = MappedInfo{dev, start, end};
 
-    // Если устройство поддерживает tick — оно получает время от шины
+    // If the device supports tick, it receives time from the bus
     if (auto *t = dynamic_cast<ITickable *>(dev)) {
       add_tickable(t);
     }
   }
 
   /**
-   * @brief Устройство, получающее время от шины, но не отображённое в память
-   * целиком (например, таймер, у которого в карте лежат отдельные регистры).
-   * Повторная регистрация одного и того же устройства игнорируется.
+   * @brief A device that receives time from the bus but is not mapped into
+   * memory as a whole (for example a timer whose individual registers are in
+   * the map). Registering the same device again is ignored.
    */
   void add_tickable(ITickable *t) {
     if (std::find(tickables_.begin(), tickables_.end(), t) == tickables_.end())
@@ -61,10 +62,10 @@ public:
   }
 
   /**
-   * @brief Устройство «по умолчанию» для адресов диапазона [start, end],
-   * на которые ничего не отображено (регистры, которых ещё нет в модели).
-   * Устройство получает смещение от start. Вне диапазона обращение к
-   * неотображённому адресу по-прежнему считается ошибкой.
+   * @brief The "default" device for addresses of the range [start, end]
+   * that have nothing mapped (registers that are not in the model yet).
+   * The device receives the offset from start. Outside the range, access to an
+   * unmapped address is still an error.
    */
   void set_fallback(uint32_t start, uint32_t end, IMemoryMapped *dev) {
     if (start > end || end - start + 1 != dev->size())
@@ -98,12 +99,12 @@ private:
     uint32_t end = 0;
   };
 
-  // ключ = start адрес диапазона
+  // key = the start address of the range
   std::map<uint32_t, MappedInfo> devices_;
   MappedInfo fallback_;
   bool has_fallback_ = false;
 
-  // отдельный список для tickable устройств
+  // a separate list for tickable devices
   std::vector<ITickable *> tickables_;
 
   const MappedInfo &find_device(uint32_t addr) const {

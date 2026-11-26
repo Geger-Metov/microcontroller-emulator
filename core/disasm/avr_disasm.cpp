@@ -6,7 +6,7 @@
 namespace avr {
 namespace {
 
-constexpr uint32_t PC_WORD_MASK = 0x3FFF; // ATmega328P: 16 К слов flash
+constexpr uint32_t PC_WORD_MASK = 0x3FFF; // ATmega328P: 16 K words of flash
 
 std::string fmt(const char *f, ...) {
   char buf[96];
@@ -17,14 +17,14 @@ std::string fmt(const char *f, ...) {
   return buf;
 }
 
-// Поля опкода
+// Opcode fields
 int rd5(uint16_t w) { return (w >> 4) & 0x1F; }
 int rr5(uint16_t w) { return ((w >> 5) & 0x10) | (w & 0x0F); }
 int rd4(uint16_t w) { return 16 + ((w >> 4) & 0x0F); } // r16..r31
 int k8(uint16_t w) { return ((w >> 4) & 0xF0) | (w & 0x0F); }
 int io6(uint16_t w) { return ((w >> 5) & 0x30) | (w & 0x0F); }
 
-// Байтовый адрес цели относительного перехода: слово (PC+1+k)
+// The byte address of a relative jump target: word (PC+1+k)
 uint32_t rel_target(uint32_t word_addr, int k) {
   return (((word_addr + 1 + static_cast<uint32_t>(k)) & PC_WORD_MASK)) * 2;
 }
@@ -42,7 +42,7 @@ const char *const BRBS_NAMES[8] = {"brcs", "breq", "brmi", "brvs",
 const char *const BRBC_NAMES[8] = {"brcc", "brne", "brpl", "brvc",
                                    "brge", "brhc", "brtc", "brid"};
 
-// Двухрегистровые команды 0000..0010
+// Two-register instructions 0000..0010
 // (CPC/SBC/ADD/CPSE/CP/SUB/ADC/AND/EOR/OR/MOV)
 Disassembled two_reg(uint16_t w) {
   const int d = rd5(w);
@@ -97,7 +97,7 @@ Disassembled mul_group(uint16_t w) {
   }
 }
 
-// 10q0 qqsd dddd yqqq: LDD/STD (и LD/ST Y/Z без смещения при q == 0)
+// 10q0 qqsd dddd yqqq: LDD/STD (and LD/ST Y/Z without displacement when q == 0)
 Disassembled ldd_std(uint16_t w) {
   const int q = ((w >> 8) & 0x20) | ((w >> 7) & 0x18) | (w & 0x07);
   const char y = (w & 0x08) ? 'Y' : 'Z';
@@ -108,7 +108,7 @@ Disassembled ldd_std(uint16_t w) {
                    : fmt("ld r%d, %s", d, ptr.c_str()));
 }
 
-// 1001 000d / 1001 001d: LDS/STS, LD/ST с постинкрементом, LPM, POP/PUSH
+// 1001 000d / 1001 001d: LDS/STS, LD/ST with post-increment, LPM, POP/PUSH
 Disassembled load_store(uint16_t w, uint16_t w1) {
   const int d = rd5(w);
   const bool store = (w & 0x0200) != 0;
@@ -147,12 +147,12 @@ Disassembled load_store(uint16_t w, uint16_t w1) {
       return one(fmt("lpm r%d, %s", d, op == 0x4 ? "Z" : "Z+"));
     return unknown(w);
   default:
-    return unknown(w); // ELPM, XCH/LAS/LAC/LAT — нет на ATmega328P
+    return unknown(w); // ELPM, XCH/LAS/LAC/LAT — not on the ATmega328P
   }
   return one(store ? fmt("st %s, r%d", ptr, d) : fmt("ld r%d, %s", d, ptr));
 }
 
-// 1001 010x xxxx xxxx: однооперандные, флаги, ret/reti/sleep/…, jmp/call
+// 1001 010x xxxx xxxx: single-operand, flags, ret/reti/sleep/…, jmp/call
 Disassembled misc(uint16_t w, uint16_t w1) {
   const int d = rd5(w);
   switch (w & 0xFE0F) {
@@ -201,7 +201,7 @@ Disassembled misc(uint16_t w, uint16_t w1) {
   default:
     break;
   }
-  if ((w & 0xFE0E) == 0x940C) { // JMP k (22 бита, адрес в словах)
+  if ((w & 0xFE0E) == 0x940C) { // JMP k (22 bits, address in words)
     const uint32_t k = ((((w >> 4) & 0x1F) << 1 | (w & 1)) << 16) | w1;
     return two(fmt("jmp 0x%04X", ((k * 2) & (PC_WORD_MASK * 2 + 1))));
   }
@@ -220,7 +220,7 @@ Disassembled disassemble(uint16_t w, uint16_t w1, uint32_t word_addr) {
 
   switch (w >> 12) {
   case 0x0:
-    if ((w & 0xFC00) == 0x0000) // 0000 00xx: MOVW/MULS/…; 0x00xx ≠ 0 — нет
+    if ((w & 0xFC00) == 0x0000) // 0000 00xx: MOVW/MULS/…; 0x00xx ≠ 0 — none
       return (w & 0xFF00) == 0x0000 ? unknown(w) : mul_group(w);
     return two_reg(w);
   case 0x1:

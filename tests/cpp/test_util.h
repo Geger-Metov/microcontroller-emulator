@@ -1,4 +1,4 @@
-// Общие помощники для тестов: сборка эмулятора с небольшой программой во flash.
+// Common test helpers: building an emulator with a small program in flash.
 #pragma once
 
 #include <cstdint>
@@ -10,7 +10,7 @@
 
 namespace testutil {
 
-// Адреса регистров в пространстве данных
+// Register addresses in the data space
 constexpr uint32_t TIFR0 = 0x35;
 constexpr uint32_t TCCR0A = 0x44;
 constexpr uint32_t TCCR0B = 0x45;
@@ -33,7 +33,7 @@ inline std::unique_ptr<IEmulatorFacade> make_emu(std::vector<Chunk> chunks) {
   return emu;
 }
 
-// --- кодировщики опкодов ---
+// --- opcode encoders ---
 inline uint16_t rjmp(int k) { return 0xC000 | (k & 0x0FFF); }
 inline uint16_t ldi(int rd, int k) {
   return 0xE000 | ((k & 0xF0) << 4) | (((rd - 16) & 0xF) << 4) | (k & 0x0F);
@@ -47,7 +47,7 @@ inline uint16_t mov(int rd, int rr) {
   return 0x2C00 | ((rd & 0x10) << 4) | ((rr & 0x10) << 5) | ((rd & 0x0F) << 4) |
          (rr & 0x0F);
 }
-// Rd,Rr: 0000 00rd dddd rrrr с заданной базой (ADD=0x0C00, SUB=0x1800, ...)
+// Rd,Rr: 0000 00rd dddd rrrr with the given base (ADD=0x0C00, SUB=0x1800, ...)
 inline uint16_t rd_rr(uint16_t base, int rd, int rr) {
   return base | ((rr & 0x10) << 5) | (rd << 4) | (rr & 0x0F);
 }
@@ -55,7 +55,7 @@ inline uint16_t rd_rr(uint16_t base, int rd, int rr) {
 inline uint16_t rd_k(uint16_t base, int rd, int k) {
   return base | ((k & 0xF0) << 4) | ((rd - 16) << 4) | (k & 0x0F);
 }
-// Однооперандные: COM=0x9400, NEG=0x9401, SWAP=0x9402, INC=0x9403, ...
+// Single-operand: COM=0x9400, NEG=0x9401, SWAP=0x9402, INC=0x9403, ...
 inline uint16_t unary(uint16_t base, int rd) { return base | (rd << 4); }
 
 inline uint16_t sbiw_adiw(uint16_t base, int rd_low, int k) {

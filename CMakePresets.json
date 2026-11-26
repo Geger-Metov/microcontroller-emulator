@@ -8,7 +8,7 @@
   "configurePresets": [
     {
       "name": "debug",
-      "displayName": "Debug: -g3 -O0, ASan+UBSan, warnings as errors (тесты, отладка)",
+      "displayName": "Debug: -g3 -O0, ASan+UBSan, warnings as errors (tests, debugging)",
       "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -21,7 +21,7 @@
     },
     {
       "name": "release",
-      "displayName": "Release: -O2, warnings as errors, без Python (тесты оптимизированной сборки)",
+      "displayName": "Release: -O2, warnings as errors, no Python (tests of the optimized build)",
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
@@ -34,7 +34,7 @@
     },
     {
       "name": "release-python",
-      "displayName": "Release: -O2 + модуль emulator_backend для GUI (нужен pybind11)",
+      "displayName": "Release: -O2 + the emulator_backend module for the GUI (needs pybind11)",
       "inherits": "release",
       "binaryDir": "${sourceDir}/build/release-python",
       "cacheVariables": {

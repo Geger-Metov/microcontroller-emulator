@@ -27,7 +27,7 @@ std::string hex2(unsigned v) {
   return buf;
 }
 
-// Убирает пробельные символы (включая '\r') с обоих краёв.
+// Strips whitespace characters (including '\r') from both ends.
 std::string trim(const std::string &s) {
   size_t b = 0;
   size_t e = s.size();
@@ -38,9 +38,9 @@ std::string trim(const std::string &s) {
   return s.substr(b, e - b);
 }
 
-// Строка (без ':') -> байты. Проверяет чётность длины и допустимость символов.
+// A line (without ':') -> bytes. Checks an even length and valid characters.
 std::vector<uint8_t> decode_bytes(const std::string &line, int line_no) {
-  const size_t digits = line.size() - 1; // без ':'
+  const size_t digits = line.size() - 1; // without ':'
   if (digits % 2 != 0)
     fail(line_no, "odd number of hex digits");
 
@@ -71,7 +71,7 @@ void require_size(const std::vector<uint8_t> &data, size_t n, const char *name,
 
 HexImage HexParser::parse(std::istream &input) {
   HexImage image;
-  uint32_t base = 0; // база адреса из записи 02 или 04
+  uint32_t base = 0; // the address base from a 02 or 04 record
   int line_no = 0;
 
   std::string raw;
@@ -83,7 +83,7 @@ HexImage HexParser::parse(std::istream &input) {
     if (line[0] != ':')
       fail(line_no, "line must start with ':'");
 
-    // Минимум: счётчик, адрес (2), тип, контрольная сумма = 5 байт.
+    // Minimum: count, address (2), type, checksum = 5 bytes.
     const std::vector<uint8_t> bytes = decode_bytes(line, line_no);
     if (bytes.size() < 5)
       fail(line_no, "record is too short");
@@ -125,7 +125,7 @@ HexImage HexParser::parse(std::istream &input) {
       break;
     case HexRecordType::StartSegmentAddr:
       require_size(rec.data, 4, "StartSegmentAddr", line_no);
-      break; // для AVR точка входа не нужна
+      break; // the entry point is not needed for AVR
     case HexRecordType::StartLinearAddr:
       require_size(rec.data, 4, "StartLinearAddr", line_no);
       break;

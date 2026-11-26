@@ -59,7 +59,7 @@ public:
     if (pullup)
       return WireLevel::High;
 
-    return WireLevel::Floating; // все HiZ = плавающий уровень
+    return WireLevel::Floating; // all HiZ = a floating level
   }
 
 private:

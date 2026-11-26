@@ -44,8 +44,8 @@ void avr::decode_rel12(uint32_t opcode, avr::DecodedInstruction &out) {
 }
 
 void avr::decode_abs22(uint32_t opcode, avr::DecodedInstruction &out) {
-  // JMP/CALL: 1001 010k kkkk 11mk kkkk kkkk kkkk kkkk — k[21:17] в битах 8..4
-  // первого слова, k[16] в бите 0, k[15:0] во втором слове.
+  // JMP/CALL: 1001 010k kkkk 11mk kkkk kkkk kkkk kkkk — k[21:17] in bits 8..4
+  // of the first word, k[16] in bit 0, k[15:0] in the second word.
   uint32_t first = opcode & 0xFFFF;
   uint32_t second = opcode >> 16;
 
@@ -72,13 +72,14 @@ void avr::decode_io_bit(uint32_t opcode, avr::DecodedInstruction &out) {
 
 void avr::decode_Rd_pair_K(uint32_t opcode, DecodedInstruction &out) {
   uint8_t dd = (opcode >> 4) & 0x03;
-  out.Rd = 24 + dd * 2; // начальный регистр пары
+  out.Rd = 24 + dd * 2; // the first register of the pair
   out.imm = ((opcode & 0x00C0) >> 2) | (opcode & 0x000F); // K[5:0]
 }
 
 void avr::decode_Rd_Rr_pair(uint32_t opcode, DecodedInstruction &out) {
-  out.Rd = ((opcode >> 4) & 0x0F) * 2; // Rd = старшие 4 бита номера пары * 2
-  out.Rr = (opcode & 0x0F) * 2;        // Rr = младшие 4 бита номера пары * 2
+  out.Rd = ((opcode >> 4) & 0x0F) *
+           2;                   // Rd = the upper 4 bits of the pair number * 2
+  out.Rr = (opcode & 0x0F) * 2; // Rr = the lower 4 bits of the pair number * 2
 }
 
 void avr::decode_Rd_bit(uint32_t opcode, avr::DecodedInstruction &out) {
@@ -88,11 +89,11 @@ void avr::decode_Rd_bit(uint32_t opcode, avr::DecodedInstruction &out) {
 
 void avr::decode_Rd_k16(uint32_t opcode, avr::DecodedInstruction &out) {
   out.Rd = (opcode >> 4) & 0x1F;
-  out.imm = opcode >> 16; // адрес данных во втором слове
+  out.imm = opcode >> 16; // the data address in the second word
 }
 
 void avr::decode_ld_st_ptr(uint32_t opcode, avr::DecodedInstruction &out) {
-  out.Rd = (opcode >> 4) & 0x1F; // для ST это Rr, но поле то же
+  out.Rd = (opcode >> 4) & 0x1F; // for ST this is Rr, but the field is the same
   out.imm = 0;
   switch (opcode & 0x0F) {
   case 0x1:
@@ -127,7 +128,7 @@ void avr::decode_ld_st_ptr(uint32_t opcode, avr::DecodedInstruction &out) {
 }
 
 void avr::decode_ldd_std(uint32_t opcode, avr::DecodedInstruction &out) {
-  // 10q0 qq0d dddd yqqq: y=1 -> Y, y=0 -> Z; q = смещение 0..63
+  // 10q0 qq0d dddd yqqq: y=1 -> Y, y=0 -> Z; q = displacement 0..63
   out.Rd = (opcode >> 4) & 0x1F;
   out.ptr = (opcode & 0x08) ? 28 : 30;
   out.mode = 0;

@@ -1,4 +1,4 @@
-// Интеграционные тесты: загрузка реальных HEX-файлов и выполнение прошивки.
+// Integration tests: loading real HEX files and running the firmware.
 #include <fstream>
 #include <memory>
 #include <string>
@@ -32,9 +32,10 @@ std::unique_ptr<IEmulatorFacade> load_firmware(const std::string &name) {
 
 TEST(firmware_hex_is_loaded_into_flash) {
   auto emu = load_firmware("firmware.hex");
-  // Первая инструкция вектора RESET: JMP k (0x940C, затем адрес).
+  // The first instruction of the RESET vector: JMP k (0x940C, then the
+  // address).
   CHECK_EQ(emu->read_program(0, 1), 0x940Cu);
-  // Стёртый flash читается как 0xFF.
+  // Erased flash reads as 0xFF.
   CHECK_EQ(emu->read_program(0x3FFF, 1), 0xFFFFu);
 }
 
@@ -43,7 +44,7 @@ TEST(firmware_hex_blinks_pb5) {
 
   int toggles = 0;
   uint8_t last = emu->read_data(PORTB, 1) & PB5;
-  // Выполнение не должно бросать исключений (раньше падало на BRNE назад).
+  // Execution must not throw (it used to fail on a backward BRNE).
   for (int i = 0; i < 3000000 && toggles < 4; ++i) {
     emu->step_instruction();
     uint8_t now = emu->read_data(PORTB, 1) & PB5;
@@ -54,7 +55,7 @@ TEST(firmware_hex_blinks_pb5) {
   }
 
   CHECK_EQ(toggles, 4);
-  CHECK(emu->read_data(DDRB, 1) & PB5); // пин сконфигурирован как выход
+  CHECK(emu->read_data(DDRB, 1) & PB5); // the pin is configured as an output
 }
 
 TEST(firmware_test_hex_runs_without_errors) {

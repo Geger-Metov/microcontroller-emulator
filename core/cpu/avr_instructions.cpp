@@ -2,8 +2,8 @@
 #include "cpu/AVRExecutionContext.h"
 #include "decoder/avr_decode_helpers.h"
 
-// Формулы флагов взяты из AVR Instruction Set Manual (DS40002198).
-// Тесты сверяют их с независимым оракулом на широкой арифметике.
+// Flag formulas are taken from the AVR Instruction Set Manual (DS40002198).
+// Tests check them against an independent oracle on wide arithmetic.
 
 namespace {
 
@@ -11,7 +11,7 @@ using avr::DecodedInstruction;
 
 inline bool bit(unsigned v, unsigned n) { return (v >> n) & 1u; }
 
-/// N, Z, V, S для результата (S = N xor V).
+/// N, Z, V, S for a result (S = N xor V).
 void set_nzvs(AVRExecutionContext &ctx, uint8_t res, bool v) {
   bool n = bit(res, 7);
   ctx.set_flag(SREGFlag::N, n);
@@ -31,7 +31,7 @@ uint8_t add8(AVRExecutionContext &ctx, uint8_t rd, uint8_t rr, uint8_t cin) {
   return res;
 }
 
-/// Вычитание rd - rr - cin. keep_z: Z «липкий» (SBC/SBCI/CPC).
+/// Subtraction rd - rr - cin. keep_z: sticky Z (SBC/SBCI/CPC).
 uint8_t sub8(AVRExecutionContext &ctx, uint8_t rd, uint8_t rr, uint8_t cin,
              bool keep_z) {
   bool old_z = ctx.get_flag(SREGFlag::Z);
@@ -51,14 +51,14 @@ uint8_t carry_in(const AVRExecutionContext &ctx) {
   return ctx.get_flag(SREGFlag::C) ? 1 : 0;
 }
 
-/// Логические операции: V = 0, C не меняется.
+/// Logical operations: V = 0, C is unchanged.
 void write_logic(AVRExecutionContext &ctx, uint8_t reg, uint8_t res) {
   ctx.write_reg(reg, res);
   set_nzvs(ctx, res, false);
 }
 
-/// Условный пропуск следующей инструкции (CPSE/SBRC/SBRS/SBIC/SBIS):
-/// +1 такт за пропущенное слово, +2 если пропускается 2-словная инструкция.
+/// Conditional skip of the next instruction (CPSE/SBRC/SBRS/SBIC/SBIS):
+/// +1 cycle for a skipped word, +2 if a 2-word instruction is skipped.
 void skip_next(AVRExecutionContext &ctx) {
   uint8_t words = avr::get_next_instruction_words(ctx);
   ctx.set_pc(ctx.pc() + 1 + words);
@@ -75,7 +75,7 @@ uint8_t read_flash_byte(AVRExecutionContext &ctx, uint16_t byte_addr) {
   return static_cast<uint8_t>((byte_addr & 1) ? (word >> 8) : (word & 0xFF));
 }
 
-/// Общая часть сдвигов вправо: C = старый bit0, N, Z, V = N xor C.
+/// Common part of right shifts: C = old bit0, N, Z, V = N xor C.
 void finish_shift_right(AVRExecutionContext &ctx, uint8_t reg, uint8_t old,
                         uint8_t res) {
   ctx.write_reg(reg, res);
@@ -86,7 +86,7 @@ void finish_shift_right(AVRExecutionContext &ctx, uint8_t reg, uint8_t old,
 
 } // namespace
 
-// ---------------------------------------------------------------- Арифметика
+// ---------------------------------------------------------------- Arithmetic
 
 void avr::exec_ADD(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.write_reg(instr.Rd,
@@ -94,7 +94,7 @@ void avr::exec_ADD(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
 }
 
 void avr::exec_ADC(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
-  // Z у ADC обычный (не «липкий»): Z = (результат == 0).
+  // Z for ADC is plain (not sticky): Z = (result == 0).
   ctx.write_reg(instr.Rd, add8(ctx, ctx.read_reg(instr.Rd),
                                ctx.read_reg(instr.Rr), carry_in(ctx)));
 }
@@ -236,10 +236,10 @@ void avr::exec_SBIW(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.set_flag(SREGFlag::S, n != v);
 }
 
-// ------------------------------------------------------------------ Умножение
+// ------------------------------------------------------------ Multiplication
 
 namespace {
-/// Записать R1:R0 и флаги C (бит 15 произведения) и Z.
+/// Write R1:R0 and the flags C (product bit 15) and Z.
 void finish_mul(AVRExecutionContext &ctx, uint16_t product, bool fractional) {
   uint16_t res = fractional ? static_cast<uint16_t>(product << 1) : product;
   ctx.write_reg16(0, res);
@@ -287,7 +287,7 @@ void avr::exec_FMULSU(AVRExecutionContext &ctx,
   finish_mul(ctx, static_cast<uint16_t>(p), true);
 }
 
-// ------------------------------------------------------------------ Пересылки
+// -------------------------------------------------------------------- Moves
 
 void avr::exec_MOV(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.write_reg(instr.Rd, ctx.read_reg(instr.Rr));
@@ -337,7 +337,7 @@ void avr::exec_ST(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
     ctx.write_reg16(instr.ptr, p);
   }
   uint16_t addr = static_cast<uint16_t>(instr.mode == 0 ? p + instr.imm : p);
-  // Значение читаем после возможного изменения указателя (ST X+, r26 — UB).
+  // The value is read after the pointer may have changed (ST X+, r26 — UB).
   ctx.data_write(addr, ctx.read_reg(instr.Rd));
   if (instr.mode == 1)
     ctx.write_reg16(instr.ptr, static_cast<uint16_t>(p + 1));
@@ -351,7 +351,7 @@ void avr::exec_STS(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.data_write(static_cast<uint16_t>(instr.imm), ctx.read_reg(instr.Rd));
 }
 
-// LPM Rd, Z / LPM Rd, Z+ (режим берётся из декодера: 0 или 1).
+// LPM Rd, Z / LPM Rd, Z+ (the mode comes from the decoder: 0 or 1).
 void avr::exec_LPM(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   uint16_t z = ctx.read_reg16(30);
   uint8_t byte = read_flash_byte(ctx, z);
@@ -360,13 +360,13 @@ void avr::exec_LPM(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.write_reg(instr.Rd, byte);
 }
 
-// LPM (без операндов): R0 <- (Z)
+// LPM (no operands): R0 <- (Z)
 void avr::exec_LPM_R0(AVRExecutionContext &ctx, const DecodedInstruction &) {
   ctx.write_reg(0, read_flash_byte(ctx, ctx.read_reg16(30)));
 }
 
-// ------------------------------------------------------------ Переходы и
-// вызовы
+// ------------------------------------------------------------- Jumps and
+// calls
 
 void avr::exec_RJMP(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.set_pc(ctx.pc() + instr.rel + 1);
@@ -404,7 +404,7 @@ void avr::exec_RET(AVRExecutionContext &ctx, const DecodedInstruction &) {
 void avr::exec_RETI(AVRExecutionContext &ctx, const DecodedInstruction &) {
   ctx.set_pc(ctx.pop_pc());
   ctx.set_flag(SREGFlag::I, true);
-  // Одна инструкция после RETI выполняется до следующего прерывания.
+  // One instruction after RETI executes before the next interrupt.
   ctx.cpu().inhibit_interrupts_for_next_instruction();
 }
 
@@ -418,8 +418,8 @@ void avr::exec_BRBC(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
     take_branch(ctx, instr);
 }
 
-// ------------------------------------------------------------ Условные
-// пропуски
+// ------------------------------------------------------------ Conditional
+// skips
 
 void avr::exec_CPSE(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   if (ctx.read_reg(instr.Rd) == ctx.read_reg(instr.Rr))
@@ -446,7 +446,7 @@ void avr::exec_SBIS(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
     skip_next(ctx);
 }
 
-// ------------------------------------------------------------- Биты и система
+// ---------------------------------------------------------- Bits and system
 
 void avr::exec_SBI(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.io_write(instr.io, ctx.io_read(instr.io) | (1u << instr.bit));
@@ -456,10 +456,10 @@ void avr::exec_CBI(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.io_write(instr.io, ctx.io_read(instr.io) & ~(1u << instr.bit));
 }
 
-// BSET s (SEC, SEZ, ..., SEI) и BCLR s (CLC, ..., CLI): режим 1 = установить.
+// BSET s (SEC, SEZ, ..., SEI) and BCLR s (CLC, ..., CLI): mode 1 = set.
 void avr::exec_BSET(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
   ctx.set_flag(static_cast<SREGFlag>(instr.sreg_bit), true);
-  if (instr.sreg_bit == 7) // SEI: следующая инструкция успевает выполниться
+  if (instr.sreg_bit == 7) // SEI: the next instruction manages to execute
     ctx.cpu().inhibit_interrupts_for_next_instruction();
 }
 
@@ -480,10 +480,10 @@ void avr::exec_BST(AVRExecutionContext &ctx, const DecodedInstruction &instr) {
 
 void avr::exec_NOP(AVRExecutionContext &, const DecodedInstruction &) {}
 
-// SLEEP: ядро останавливается до ближайшего прерывания (см. AVR_CPU::step).
+// SLEEP: the core halts until the nearest interrupt (see AVR_CPU::step).
 void avr::exec_SLEEP(AVRExecutionContext &ctx, const DecodedInstruction &) {
   ctx.cpu().enter_sleep();
 }
 
-// SPM (запись во flash) не моделируется: выполняется как NOP.
+// SPM (writing to flash) is not modeled: executes as a NOP.
 void avr::exec_SPM(AVRExecutionContext &, const DecodedInstruction &) {}

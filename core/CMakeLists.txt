@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(mcu_emulator_backend LANGUAGES CXX)
 
-# C++20: в коде уже используются designated initializers (таблица инструкций).
+# C++20: the code already uses designated initializers (the instruction table).
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -10,7 +10,7 @@ option(MCU_BUILD_PYTHON "Build the emulator_backend Python module (needs pybind1
 option(MCU_SANITIZE "Build with AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 option(MCU_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
-# Предупреждения компилятора для цели (используется и тестами).
+# Compiler warnings for the target (also used by the tests).
 function(mcu_apply_warnings target)
   if(MSVC)
     target_compile_options(${target} PRIVATE /W4)
@@ -25,7 +25,7 @@ function(mcu_apply_warnings target)
   endif()
 endfunction()
 
-# Санитайзеры: PUBLIC, чтобы флаги линковки получили и тесты.
+# Sanitizers: PUBLIC, so the tests also get the link flags.
 function(mcu_apply_sanitizers target)
   if(MCU_SANITIZE)
     if(MSVC)
@@ -38,8 +38,8 @@ function(mcu_apply_sanitizers target)
   endif()
 endfunction()
 
-# Ядро эмулятора — статическая библиотека без привязки к Python.
-# Её используют и Python-модуль, и C++-тесты.
+# The emulator core is a static library with no Python dependency.
+# It is used by both the Python module and the C++ tests.
 add_library(mcu_core STATIC
     # CPU
     cpu/AVR_CPU.cpp
@@ -70,25 +70,25 @@ add_library(mcu_core STATIC
 )
 set_target_properties(mcu_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-# Заголовки подключаются от корня core/: #include "cpu/AVR_CPU.h", "common/errors.h".
-# PUBLIC — чтобы те же пути видели C++-тесты и Python-модуль.
+# Headers are included from the root of core/: #include "cpu/AVR_CPU.h", "common/errors.h".
+# PUBLIC — so the C++ tests and the Python module see the same paths.
 target_include_directories(mcu_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 mcu_apply_warnings(mcu_core)
 mcu_apply_sanitizers(mcu_core)
 
-# Python-модуль. pybind11 ставится в venv GUI (uv add --dev pybind11), путь к нему
-# передаётся так: -Dpybind11_DIR="$(python -m pybind11 --cmakedir)"
-# и -DPython_EXECUTABLE=<python из venv>. Готовый emulator_backend*.so кладётся
-# сразу в gui/src, откуда его видит `from emulator_backend import Emulator`.
+# The Python module. pybind11 is installed into the GUI venv (uv sync), and its path
+# is passed like this: -Dpybind11_DIR="$(python -m pybind11 --cmakedir)"
+# and -DPython_EXECUTABLE=<python from the venv>. The built emulator_backend*.so goes
+# straight into gui/src, where `from emulator_backend import Emulator` finds it.
 if(MCU_BUILD_PYTHON)
-  set(PYBIND11_FINDPYTHON ON) # современный FindPython (в CMake 4 старые модули удалены)
+  set(PYBIND11_FINDPYTHON ON) # modern FindPython (the old modules were removed in CMake 4)
   find_package(pybind11 CONFIG QUIET)
   if(NOT pybind11_FOUND)
     message(FATAL_ERROR
-      "pybind11 не найден. Укажите его: "
+      "pybind11 not found. Specify it: "
       "-Dpybind11_DIR=\"$(python -m pybind11 --cmakedir)\" "
-      "и -DPython_EXECUTABLE=<python из venv>. "
-      "Либо соберите без модуля: -DMCU_BUILD_PYTHON=OFF")
+      "and -DPython_EXECUTABLE=<python from the venv>. "
+      "Or build without the module: -DMCU_BUILD_PYTHON=OFF")
   endif()
   pybind11_add_module(emulator_backend bindings/emu_bridge.cpp)
   target_link_libraries(emulator_backend PRIVATE mcu_core)

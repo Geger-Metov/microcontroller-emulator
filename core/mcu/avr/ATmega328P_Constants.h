@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-// Векторы прерываний ATmega328P (адреса в СЛОВАХ; шаг 2 слова, т.к. в
-// каждом векторе лежит JMP). См. ATmega328P datasheet, Table 11-6.
+// ATmega328P interrupt vectors (addresses in WORDS; a step of 2 words, because
+// each vector holds a JMP). See the ATmega328P datasheet, Table 11-6.
 namespace atmega328p::interrupts {
 constexpr uint16_t RESET = 0x0000;
 constexpr uint16_t INT0 = 0x0002;

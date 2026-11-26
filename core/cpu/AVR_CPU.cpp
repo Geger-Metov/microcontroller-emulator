@@ -53,21 +53,22 @@ void AVR_CPU::step() {
   extra_cycles_ = 0;
   irq_inhibit_ = false;
 
-  // SLEEP: ядро стоит (периферия продолжает тикать — режим Idle), пока не
-  // появится запрос прерывания. Источник должен быть разрешён (запрос в
-  // pending_interrupts_ уже учитывает маску периферии).
+  // SLEEP: the core stands still (peripherals keep ticking — Idle mode) until
+  // an interrupt request appears. The source must be enabled (a request in
+  // pending_interrupts_ already accounts for the peripheral's mask).
   if (sleeping_) {
     if (pending_interrupts_.empty()) {
       commit_cycles(1);
       return;
     }
     sleeping_ = false;
-    if (get_flag(7)) { // прерывание принимается сразу, возврат — после SLEEP
+    if (get_flag(
+            7)) { // the interrupt is taken at once, the return is after SLEEP
       commit_cycles(0);
       take_pending_interrupt();
       return;
     }
-    // I сброшен: просто просыпаемся и выполняем следующую инструкцию.
+    // I is cleared: just wake up and execute the next instruction.
   }
 
   // 1. FETCH
@@ -106,21 +107,21 @@ void AVR_CPU::step() {
     pc_ = current_pc + desc->length;
   }
 
-  // 6. CYCLES: базовая стоимость + доп. такты, добавленные инструкцией
+  // 6. CYCLES: the base cost + extra cycles added by the instruction
   commit_cycles(static_cast<uint16_t>(desc->cycles + extra_cycles_));
 
   // 7. INTERRUPTS
-  // Прерывания принимаются между инструкциями. Если инструкция была SEI/RETI,
-  // следующая должна выполниться до обработки прерывания.
+  // Interrupts are taken between instructions. If the instruction was SEI/RETI,
+  // the next one must execute before the interrupt is taken.
   if (!pending_interrupts_.empty() && get_flag(7) && !irq_inhibit_)
     take_pending_interrupt();
 }
 
 void AVR_CPU::take_pending_interrupt() {
-  uint16_t vector = *pending_interrupts_.begin(); // наивысший приоритет
+  uint16_t vector = *pending_interrupts_.begin(); // the highest priority
   service_interrupt(vector, pc_);
 
-  // Вход в прерывание: 2 такта на push PC + 2 такта на переход к вектору.
+  // Interrupt entry: 2 cycles to push PC + 2 cycles to jump to the vector.
   constexpr uint16_t interrupt_cycles = 4;
   last_instruction_cycles_ += interrupt_cycles;
   total_cycles_ += interrupt_cycles;
@@ -130,13 +131,13 @@ uint8_t AVR_CPU::instruction_length_at(uint32_t pc) const {
   uint16_t op = read_program_word(pc);
   avr::DecodedInstruction decoded;
   const auto *desc = decoder_->decode(op, decoded);
-  // Нераспознанное слово (данные) при пропуске считаем однословным.
+  // An unrecognized word (data) is treated as one word when skipping.
   return desc ? desc->length : 1;
 }
 
 void AVR_CPU::tick(uint64_t) {
-  // В данной архитектуре CPU сам продвигает время через step()
-  // Метод оставлен для совместимости с ITickable, можно оставить пустым
+  // In this architecture the CPU advances time itself through step()
+  // The method is kept for ITickable compatibility and may stay empty
 }
 
 void AVR_CPU::push8(uint8_t val) {
@@ -150,8 +151,9 @@ uint8_t AVR_CPU::pop8() {
 }
 
 void AVR_CPU::push_pc(uint32_t pc) {
-  // Как на реальном AVR: сначала младший байт, потом старший. В памяти старший
-  // байт оказывается по меньшему адресу (SP+1), младший — по большему.
+  // As on a real AVR: the low byte first, then the high byte. In memory the
+  // high byte ends up at the lower address (SP+1), the low byte at the higher
+  // one.
   for (uint8_t i = 0; i < pc_width_bytes_; ++i) {
     push8(static_cast<uint8_t>((pc >> (8 * i)) & 0xFF));
   }
@@ -194,7 +196,7 @@ void AVR_CPU::set_interrupt_ack_handler(uint16_t vector,
 void AVR_CPU::service_interrupt(uint16_t vector, uint32_t return_pc) {
   pending_interrupts_.erase(vector);
 
-  // Аппаратный сброс флага прерывания (например TOV0) при входе в вектор.
+  // Hardware clearing of the interrupt flag (for example TOV0) on vector entry.
   if (auto it = interrupt_ack_.find(vector); it != interrupt_ack_.end())
     it->second();
 

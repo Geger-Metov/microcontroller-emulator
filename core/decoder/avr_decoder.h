@@ -11,12 +11,12 @@
 #include "interfaces/Interfaces.h"
 
 /**
- * Универсальный табличный декодер инструкций AVR.
+ * A universal table-driven AVR instruction decoder.
  *
- * Таблица (mask/pattern) разворачивается один раз в справочник на все 65536
- * значений первого слова, поэтому decode() — это одно обращение к массиву,
- * а не линейный перебор. Семантика «первое совпадение выигрывает» сохранена.
- * Справочник общий для всех декодеров с одной и той же таблицей.
+ * The (mask/pattern) table is expanded once into a lookup over all 65536
+ * values of the first word, so decode() is a single array access
+ * rather than a linear scan. The "first match wins" semantics are preserved.
+ * The lookup is shared by all decoders with the same table.
  */
 class AVRDecoder : public IDecoder {
 public:
@@ -47,7 +47,8 @@ private:
     if (!slot) {
       auto lut = std::make_shared<Lookup>();
       lut->fill(-1);
-      for (std::size_t i = count; i-- > 0;) { // с конца: первые записи затирают
+      for (std::size_t i = count;
+           i-- > 0;) { // from the end: earlier entries overwrite
         for (uint32_t op = 0; op <= 0xFFFF; ++op) {
           if ((op & table[i].mask) == table[i].pattern)
             (*lut)[op] = static_cast<int16_t>(i);

@@ -37,10 +37,10 @@ struct MCUContext {
   //
   std::unique_ptr<StackPointerDevice> sp_device;
 
-  // регистры I/O, которых ещё нет в модели (RAZ/WI)
+  // I/O registers that are not in the model yet (RAZ/WI)
   std::unique_ptr<UnimplementedIODevice> io_fallback;
 
-  // временная заглушка
+  // temporary stub
   std::unique_ptr<MMIORegister> eearl;
   std::unique_ptr<MMIORegister> eearh;
   std::unique_ptr<MMIORegister> eecr;

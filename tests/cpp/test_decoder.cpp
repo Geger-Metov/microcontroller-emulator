@@ -1,6 +1,6 @@
-// Тесты декодирования операндов и исполнения переходов.
-// Регрессия: смещения переходов раньше декодировались без знака, из-за чего
-// любой переход назад уходил вперёд (см. аудит, D-02).
+// Tests for operand decoding and branch execution.
+// Regression: branch offsets used to be decoded as unsigned, so
+// every backward branch went forward instead.
 #include <memory>
 #include <vector>
 
@@ -38,7 +38,7 @@ TEST(decode_rel7_is_signed) {
   CHECK_EQ(rel7(brne(-64)), -64);
   CHECK_EQ(rel7(brne(-4)), -4);
   CHECK_EQ(rel7(brne(-1)), -1);
-  // Реальный опкод из firmware.hex: BRNE .-4
+  // A real opcode from firmware.hex: BRNE .-4
   CHECK_EQ(rel7(0xF7E1), -4);
 }
 
@@ -59,28 +59,28 @@ TEST(decode_rel12_is_signed) {
   CHECK_EQ(rel12(rjmp(2047)), 2047);
   CHECK_EQ(rel12(rjmp(-1)), -1);
   CHECK_EQ(rel12(rjmp(-2048)), -2048);
-  CHECK_EQ(rel12(0xCFFF), -1); // rjmp .-0 (бесконечный цикл на месте)
+  CHECK_EQ(rel12(0xCFFF), -1); // rjmp .-0 (an infinite loop in place)
 }
 
 TEST(backward_branch_and_rjmp_execute_correctly) {
   auto emu = ATmega328P::create();
   // 0: ldi r16, 3
   // 1: dec r16
-  // 2: brne .-2      (обратно на dec, пока r16 != 0)
-  // 3: rjmp .-1      (бесконечный цикл на месте)
+  // 2: brne .-2      (back to dec while r16 != 0)
+  // 3: rjmp .-1      (an infinite loop in place)
   emu->program_flash(0, {0xE003, 0x950A, brne(-2), rjmp(-1)});
   emu->reset();
 
   emu->step_instruction(); // ldi
   CHECK_EQ(emu->get_pc(), 1u);
   emu->step_instruction(); // dec -> r16 = 2
-  emu->step_instruction(); // brne, взят назад
+  emu->step_instruction(); // brne, taken backwards
   CHECK_EQ(emu->get_pc(), 1u);
   emu->step_instruction(); // dec -> 1
-  emu->step_instruction(); // brne, взят назад
+  emu->step_instruction(); // brne, taken backwards
   CHECK_EQ(emu->get_pc(), 1u);
   emu->step_instruction(); // dec -> 0
-  emu->step_instruction(); // brne, не взят
+  emu->step_instruction(); // brne, not taken
   CHECK_EQ(emu->get_pc(), 3u);
   CHECK_EQ(emu->read_data(16, 1), 0u);
 

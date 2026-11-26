@@ -1,10 +1,10 @@
 #include "cpu/avr_instructions.h"
 #include "decoder/avr_decode_helpers.h"
 
-// Набор инструкций ATmega328P (AVRe+). Первое совпадение (mask/pattern)
-// выигрывает, но перекрытий между записями нет — порядок не важен.
-// cycles — базовая стоимость; такты за взятый переход / пропуск добавляются
-// в exec_* через add_cycles().
+// The ATmega328P (AVRe+) instruction set. The first match (mask/pattern)
+// wins, but entries do not overlap — the order does not matter.
+// cycles is the base cost; cycles for a taken branch / skip are added
+// in exec_* through add_cycles().
 using namespace avr;
 
 const avr::InstructionDesc avr::avre_plus_instruction_table[]{
@@ -28,18 +28,19 @@ const avr::InstructionDesc avr::avre_plus_instruction_table[]{
     {0xFC00, 0x2400, 1, 1, decode_Rd_Rr, exec_EOR}, // CLR Rd = EOR Rd,Rd
     {0xFC00, 0x2800, 1, 1, decode_Rd_Rr, exec_OR},
     {0xFC00, 0x2C00, 1, 1, decode_Rd_Rr, exec_MOV},
-    // --- 0011..0111: операции с константой ---
+    // --- 0011..0111: operations with a constant ---
     {0xF000, 0x3000, 1, 1, decode_Rd_imm, exec_CPI},
     {0xF000, 0x4000, 1, 1, decode_Rd_imm, exec_SBCI},
     {0xF000, 0x5000, 1, 1, decode_Rd_imm, exec_SUBI},
     {0xF000, 0x6000, 1, 1, decode_Rd_imm, exec_ORI},  // SBR
     {0xF000, 0x7000, 1, 1, decode_Rd_imm, exec_ANDI}, // CBR
-    // --- 10q0 qq0d dddd yqqq: LDD/STD (LD/ST Y/Z без смещения — q=0) ---
+    // --- 10q0 qq0d dddd yqqq: LDD/STD (LD/ST Y/Z without displacement — q=0)
+    // ---
     {0xD208, 0x8000, 1, 2, decode_ldd_std, exec_LD}, // Z
     {0xD208, 0x8008, 1, 2, decode_ldd_std, exec_LD}, // Y
     {0xD208, 0x8200, 1, 2, decode_ldd_std, exec_ST}, // Z
     {0xD208, 0x8208, 1, 2, decode_ldd_std, exec_ST}, // Y
-    // --- 1001 000d dddd xxxx: загрузки ---
+    // --- 1001 000d dddd xxxx: loads ---
     {0xFE0F, 0x9000, 2, 2, decode_Rd_k16, exec_LDS},
     {0xFE0F, 0x9001, 1, 2, decode_ld_st_ptr, exec_LD}, // Z+
     {0xFE0F, 0x9002, 1, 2, decode_ld_st_ptr, exec_LD}, // -Z
@@ -51,7 +52,7 @@ const avr::InstructionDesc avr::avre_plus_instruction_table[]{
     {0xFE0F, 0x900D, 1, 2, decode_ld_st_ptr, exec_LD}, // X+
     {0xFE0F, 0x900E, 1, 2, decode_ld_st_ptr, exec_LD}, // -X
     {0xFE0F, 0x900F, 1, 2, decode_Rd, exec_POP},
-    // --- 1001 001d dddd xxxx: сохранения ---
+    // --- 1001 001d dddd xxxx: stores ---
     {0xFE0F, 0x9200, 2, 2, decode_Rd_k16, exec_STS},
     {0xFE0F, 0x9201, 1, 2, decode_ld_st_ptr, exec_ST}, // Z+
     {0xFE0F, 0x9202, 1, 2, decode_ld_st_ptr, exec_ST}, // -Z
@@ -61,7 +62,7 @@ const avr::InstructionDesc avr::avre_plus_instruction_table[]{
     {0xFE0F, 0x920D, 1, 2, decode_ld_st_ptr, exec_ST}, // X+
     {0xFE0F, 0x920E, 1, 2, decode_ld_st_ptr, exec_ST}, // -X
     {0xFE0F, 0x920F, 1, 2, decode_Rd, exec_PUSH},
-    // --- 1001 010d dddd xxxx: однооперандные ---
+    // --- 1001 010d dddd xxxx: single-operand ---
     {0xFE0F, 0x9400, 1, 1, decode_Rd, exec_COM},
     {0xFE0F, 0x9401, 1, 1, decode_Rd, exec_NEG},
     {0xFE0F, 0x9402, 1, 1, decode_Rd, exec_SWAP},
@@ -73,35 +74,36 @@ const avr::InstructionDesc avr::avre_plus_instruction_table[]{
     // --- BSET/BCLR (SEC..SEI / CLC..CLI) ---
     {0xFF8F, 0x9408, 1, 1, decode_sreg_bit, exec_BSET},
     {0xFF8F, 0x9488, 1, 1, decode_sreg_bit, exec_BCLR},
-    // --- управление ---
+    // --- control ---
     {0xFFFF, 0x9409, 1, 2, decode_none, exec_IJMP},
     {0xFFFF, 0x9508, 1, 4, decode_none, exec_RET},
     {0xFFFF, 0x9509, 1, 3, decode_none, exec_ICALL},
     {0xFFFF, 0x9518, 1, 4, decode_none, exec_RETI},
     {0xFFFF, 0x9588, 1, 1, decode_none, exec_SLEEP},
     {0xFFFF, 0x9598, 1, 1, decode_none, exec_NOP}, // BREAK
-    {0xFFFF, 0x95A8, 1, 1, decode_none, exec_NOP}, // WDR (WDT не моделируется)
+    {0xFFFF, 0x95A8, 1, 1, decode_none,
+     exec_NOP}, // WDR (the WDT is not modeled)
     {0xFFFF, 0x95C8, 1, 3, decode_none, exec_LPM_R0},
     {0xFFFF, 0x95E8, 1, 1, decode_none, exec_SPM},
     {0xFE0E, 0x940C, 2, 3, decode_abs22, exec_JMP},
     {0xFE0E, 0x940E, 2, 4, decode_abs22, exec_CALL},
-    // --- слова ---
+    // --- words ---
     {0xFF00, 0x9600, 1, 2, decode_Rd_pair_K, exec_ADIW},
     {0xFF00, 0x9700, 1, 2, decode_Rd_pair_K, exec_SBIW},
-    // --- биты I/O ---
+    // --- I/O bits ---
     {0xFF00, 0x9800, 1, 2, decode_io_bit, exec_CBI},
     {0xFF00, 0x9900, 1, 1, decode_io_bit, exec_SBIC},
     {0xFF00, 0x9A00, 1, 2, decode_io_bit, exec_SBI},
     {0xFF00, 0x9B00, 1, 1, decode_io_bit, exec_SBIS},
     // --- MUL ---
     {0xFC00, 0x9C00, 1, 2, decode_Rd_Rr, exec_MUL},
-    // --- I/O, переходы, LDI ---
+    // --- I/O, jumps, LDI ---
     {0xF800, 0xB000, 1, 1, decode_Rd_IO, exec_IN},
     {0xF800, 0xB800, 1, 1, decode_IO_Rr, exec_OUT},
     {0xF000, 0xC000, 1, 2, decode_rel12, exec_RJMP},
     {0xF000, 0xD000, 1, 3, decode_rel12, exec_RCALL},
     {0xF000, 0xE000, 1, 1, decode_Rd_imm, exec_LDI}, // SER = LDI Rd,0xFF
-    // --- условные переходы и биты регистров ---
+    // --- conditional branches and register bits ---
     {0xFC00, 0xF000, 1, 1, decode_rel7_s3, exec_BRBS},
     {0xFC00, 0xF400, 1, 1, decode_rel7_s3, exec_BRBC},
     {0xFE08, 0xF800, 1, 1, decode_Rd_bit, exec_BLD},

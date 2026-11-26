@@ -2,7 +2,7 @@
 #include "mcu/avr/ATmega328P_Constants.h"
 
 namespace {
-// Индекс бита флага → вектор прерывания
+// Flag bit index → interrupt vector
 constexpr uint8_t kFlagBits[3] = {1u << 0, 1u << 1, 1u << 2};
 constexpr uint16_t kVectors[3] = {atmega328p::interrupts::TIMER0_OVF,
                                   atmega328p::interrupts::TIMER0_COMPA,
@@ -10,14 +10,14 @@ constexpr uint16_t kVectors[3] = {atmega328p::interrupts::TIMER0_OVF,
 } // namespace
 
 Timer0::Timer0() {
-  // WGM01:00 и COM0xx; биты 3:2 зарезервированы
+  // WGM01:00 and COM0xx; bits 3:2 are reserved
   TCCR0A.on_write([this](uint8_t v) {
     TCCR0A.set(v & 0xF3);
     if (!ocr_double_buffered())
       load_ocr_from_buffer();
   });
 
-  // WGM02 и CS02:0; FOC0A/FOC0B (строб) читаются как 0 и не моделируются
+  // WGM02 and CS02:0; FOC0A/FOC0B (strobe) read as 0 and are not modeled
   TCCR0B.on_write([this](uint8_t v) {
     uint8_t old_cs = TCCR0B.value() & 0x07;
     TCCR0B.set(v & 0x0F);
@@ -48,7 +48,7 @@ Timer0::Timer0() {
     update_irq();
   });
 
-  // Флаги сбрасываются записью единицы
+  // Flags are cleared by writing a one
   TIFR0.on_write([this](uint8_t v) {
     TIFR0.set(TIFR0.value() & ~(v & 0x07));
     update_irq();
@@ -78,7 +78,7 @@ void Timer0::attach_interrupt_sink(IInterruptSink *sink) {
   interrupt_sink_ = sink;
   if (!sink)
     return;
-  // Аппаратура сбрасывает флаг прерывания при входе в вектор
+  // The hardware clears the interrupt flag on vector entry
   for (int i = 0; i < 3; ++i) {
     sink->set_interrupt_ack_handler(kVectors[i], [this, i] {
       TIFR0.set(TIFR0.value() & static_cast<uint8_t>(~kFlagBits[i]));
@@ -91,7 +91,7 @@ uint8_t Timer0::wgm() const {
                               (TCCR0A.value() & 3));
 }
 
-// PWM-режимы: 1 (PC, TOP=FF), 3 (Fast, TOP=FF), 5 (PC, TOP=OCRA),
+// PWM modes: 1 (PC, TOP=FF), 3 (Fast, TOP=FF), 5 (PC, TOP=OCRA),
 // 7 (Fast, TOP=OCRA)
 bool Timer0::ocr_double_buffered() const {
   uint8_t m = wgm();
@@ -116,14 +116,14 @@ void Timer0::tick(uint64_t cycles) {
   update_irq();
 }
 
-// Один такт таймера (после предделителя).
+// One timer tick (after the prescaler).
 void Timer0::clock_timer() {
   const uint8_t mode = wgm();
   const uint8_t cnt = TCNT0.value();
   uint8_t flags = TIFR0.value();
 
-  // Compare match: флаг выставляется на такте ПОСЛЕ совпадения TCNT0 с OCR0x
-  // (datasheet, "Setting of OCF0x"); запись в TCNT0 блокирует сравнение.
+  // Compare match: the flag is set on the cycle AFTER TCNT0 matches OCR0x
+  // (datasheet, "Setting of OCF0x"); a write to TCNT0 blocks the compare.
   if (!skip_compare_) {
     if (cnt == ocr_a_active_)
       flags |= OCF0A;
@@ -137,43 +137,44 @@ void Timer0::clock_timer() {
   uint8_t next;
 
   if (mode == 1 || mode == 5) {
-    // Phase Correct PWM: вверх до TOP, затем вниз до BOTTOM
+    // Phase Correct PWM: up to TOP, then down to BOTTOM
     if (counting_up_) {
       next = static_cast<uint8_t>(cnt + 1);
       if (next >= top) {
         next = top;
         counting_up_ = false;
-        load_ocr_from_buffer(); // OCR обновляется на TOP
+        load_ocr_from_buffer(); // OCR is updated at TOP
       }
     } else {
       next = cnt == 0 ? 0 : static_cast<uint8_t>(cnt - 1);
       if (next == 0) {
         counting_up_ = true;
-        flags |= TOV0; // TOV0 на BOTTOM
+        flags |= TOV0; // TOV0 at BOTTOM
       }
     }
   } else {
-    // Normal / CTC / Fast PWM: счёт вверх
+    // Normal / CTC / Fast PWM: count up
     next = (top_is_ocra && cnt == top) ? 0 : static_cast<uint8_t>(cnt + 1);
 
     if (mode == 7) {
       if (next == top)
-        flags |= TOV0; // Fast PWM с TOP=OCR0A: TOV0 на TOP
+        flags |= TOV0; // Fast PWM with TOP=OCR0A: TOV0 at TOP
     } else if (cnt == 0xFF && next == 0) {
-      flags |= TOV0; // TOV0 на MAX
+      flags |= TOV0; // TOV0 at MAX
     }
 
     if (ocr_double_buffered() && next == 0)
-      load_ocr_from_buffer(); // Fast PWM: обновление OCR на BOTTOM
+      load_ocr_from_buffer(); // Fast PWM: OCR is updated at BOTTOM
   }
 
   TCNT0.set(next);
   TIFR0.set(flags);
 }
 
-// Линия прерывания активна, пока выставлен флаг И разрешена маска (уровень,
-// а не импульс): если TOIE0 включили при уже взведённом TOV0 — прерывание
-// сработает; если флаг сбросили или маску сняли — запрос снимается.
+// The interrupt line is active while the flag is set AND the mask is enabled (a
+// level, not a pulse): if TOIE0 is enabled while TOV0 is already set, the
+// interrupt fires; if the flag is cleared or the mask removed, the request is
+// withdrawn.
 void Timer0::update_irq() {
   if (!interrupt_sink_)
     return;

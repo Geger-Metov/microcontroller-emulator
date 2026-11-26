@@ -1,6 +1,6 @@
-// Минимальный тестовый каркас без внешних зависимостей.
-// Нужен, чтобы тесты собирались и запускались офлайн; при переходе на
-// GoogleTest макросы TEST/CHECK_EQ переносятся почти один-в-один.
+// A minimal test framework with no external dependencies.
+// It lets the tests build and run offline; when moving to
+// GoogleTest the TEST/CHECK_EQ macros carry over almost one to one.
 #pragma once
 
 #include <cstdio>
@@ -51,8 +51,8 @@ inline int run_all() {
   return failed == 0 ? 0 : 1;
 }
 
-// Числа печатаем через унарный плюс (uint8_t как число, а не символ), прочее —
-// как есть.
+// Numbers are printed through unary plus (uint8_t as a number, not a
+// character), everything else as is.
 template <typename T> inline decltype(auto) printable(const T &v) {
   if constexpr (std::is_arithmetic_v<T>)
     return +v;

@@ -7,8 +7,8 @@ class AVRExecutionContext;
 namespace avr {
 
 /**
- * Результат декодирования инструкции
- * Содержит уже извлечённые операнды
+ * The result of decoding an instruction
+ * Contains the already extracted operands
  */
 struct DecodedInstruction {
   uint8_t Rd = 0;
@@ -18,36 +18,36 @@ struct DecodedInstruction {
   uint8_t io = 0;
   uint8_t bit = 0;
   uint8_t sreg_bit = 0;
-  /// Низкий регистр указательной пары (26=X, 28=Y, 30=Z) для LD/ST.
+  /// The low register of a pointer pair (26=X, 28=Y, 30=Z) for LD/ST.
   uint8_t ptr = 0;
-  /// Режим адресации LD/ST: 0 — обычный (+displacement), 1 — пост-инкремент,
-  /// 2 — пре-декремент.
+  /// LD/ST addressing mode: 0 — plain (+displacement), 1 — post-increment,
+  /// 2 — pre-decrement.
   uint8_t mode = 0;
 };
 
 /**
- * Описание инструкции (ISA entry)
+ * Instruction description (an ISA entry)
  */
 struct InstructionDesc {
   uint16_t mask;
   uint16_t pattern;
   /**
-   * @brief длина инструкции (в словах: 1 или 2)
+   * @brief instruction length (in words: 1 or 2)
    */
   uint8_t length;
   /**
-   * @brief базовое число циклов (при особых условиях дополнительные циклы
-   * добавляются в exec_* методах)
+   * @brief the base number of cycles (under special conditions extra cycles
+   * are added in the exec_* methods)
    */
   uint8_t cycles;
-  // декодирование операндов
+  // operand decoding
   void (*decode)(uint32_t opcode, DecodedInstruction &out);
-  // выполнение инструкции
+  // instruction execution
   void (*execute)(AVRExecutionContext &ctx, const DecodedInstruction &instr);
 };
 
 /**
- * Таблица инструкций (определяется в .cpp)
+ * The instruction table (defined in the .cpp)
  */
 extern const InstructionDesc avre_plus_instruction_table[];
 extern const std::size_t avre_plus_instruction_table_size;

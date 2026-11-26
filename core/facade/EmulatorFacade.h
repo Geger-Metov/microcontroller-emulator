@@ -8,20 +8,20 @@
 class FlashDevice;
 
 /**
- * @brief Владеет всеми компонентами, предоставляет интерфейс IDebuggable
+ * @brief Owns all components, provides the IDebuggable interface
  */
 class EmulatorFacade : public IEmulatorFacade {
 public:
   EmulatorFacade();
   ~EmulatorFacade() override;
 
-  // Настройка (вызывается при сборке MCU)
+  // Setup (called when the MCU is assembled)
   void set_cpu(std::unique_ptr<ICPU> cpu);
   void set_data_bus(std::unique_ptr<IDataBus> bus);
   void set_code_bus(std::unique_ptr<ICodeBus> bus);
-  void set_flash_device(FlashDevice *flash); // не владеет
+  void set_flash_device(FlashDevice *flash); // does not own
   void add_memory_device(std::unique_ptr<IMemoryMapped> dev);
-  // Добавить регион памяти для отладки (например, SRAM, Flash)
+  // Add a memory region for debugging (for example SRAM, Flash)
   void add_memory_region(const std::string &name, uint32_t start, uint32_t end,
                          bool readable, bool writable);
 
@@ -63,24 +63,24 @@ private:
   std::unique_ptr<ICodeBus> code_bus_;
   FlashDevice *flash_dev_ = nullptr;
   std::vector<std::unique_ptr<IMemoryMapped>>
-      memory_devices_;                       // владеем памятью
-  std::vector<IResettable *> reset_devices_; // устройства, поддерживающие
-                                             // перезапуск
+      memory_devices_;                       // we own the memory
+  std::vector<IResettable *> reset_devices_; // devices that support
+                                             // reset
   std::vector<std::unique_ptr<IResettable>>
-      owned_devices_; // по хорошему использовать другой интерфейс
+      owned_devices_; // ideally a different interface should be used
 
-  // Карта памяти для отладки
+  // Memory map for debugging
   std::vector<MemoryRegion> memory_regions_;
 
-  // Управление симуляцией
+  // Simulation control
   std::atomic<bool> running_{false};
   std::atomic<bool> stop_requested_{false};
 
-  // Колбэки GUI
+  // GUI callbacks
   PCCallback on_pc_changed_;
   MemoryChangedCallback on_memory_changed_;
 
-  // Вспомогательные методы
+  // Helper methods
   void notify_pc_changed();
   void notify_memory_changed(uint32_t addr, uint32_t size);
 };

@@ -23,7 +23,7 @@ public:
 
   uint32_t size() const override { return 32; }
 
-  // Прямой доступ для CPU
+  // Direct access for the CPU
   uint8_t &operator[](uint8_t idx) { return regs_[idx]; }
   const uint8_t &operator[](uint8_t idx) const { return regs_[idx]; }
 

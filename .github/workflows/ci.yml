@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # debug: -g3 -O0 + ASan/UBSan; release: -O2 (ловит UB, зависящее от оптимизации)
+        # debug: -g3 -O0 + ASan/UBSan; release: -O2 (catches UB that depends on optimization)
         preset: [debug, release]
     steps:
       - uses: actions/checkout@v7
@@ -48,7 +48,7 @@ jobs:
       - name: Type check (mypy)
         run: uv run mypy src
 
-  # Тесты GUI: чистая логика, виджеты (pytest-qt, offscreen) и интеграция с настоящим ядром.
+  # GUI tests: pure logic, widgets (pytest-qt, offscreen) and integration with the real core.
   gui-tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 25

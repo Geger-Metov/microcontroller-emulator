@@ -1,5 +1,5 @@
-// Дизассемблер: известные строки (в формате avr-objdump) и согласованность с
-// декодером/исполнителем по всем 65536 опкодам.
+// Disassembler: known strings (in avr-objdump format) and consistency with
+// the decoder/executor over all 65536 opcodes.
 #include <string>
 
 #include "cpu/avr_instructions.h"
@@ -73,25 +73,25 @@ TEST(disasm_two_word_instructions) {
   CHECK_EQ(lds.words, 2u);
   CHECK_EQ(lds.text, "lds r16, 0x0100");
   CHECK_EQ(dis(0x9200 | (16 << 4), 0x0123), "sts 0x0123, r16");
-  CHECK_EQ(dis(0x940C, 0x0034), "jmp 0x0068"); // слово 0x34 -> байт 0x68
+  CHECK_EQ(dis(0x940C, 0x0034), "jmp 0x0068"); // word 0x34 -> byte 0x68
   CHECK_EQ(dis(0x940E, 0x0034), "call 0x0068");
   CHECK_EQ(avr::disassemble(0x940C, 0x0034, 0).words, 2u);
 }
 
 TEST(disasm_relative_targets_are_byte_addresses) {
-  // RJMP .-1 по слову 0x10: цель = слово 0x10 -> байт 0x20
+  // RJMP .-1 at word 0x10: target = word 0x10 -> byte 0x20
   CHECK_EQ(dis(rjmp(-1), 0, 0x10), "rjmp 0x0020");
-  CHECK_EQ(dis(rjmp(0), 0, 0x10), "rjmp 0x0022"); // на следующее слово
+  CHECK_EQ(dis(rjmp(0), 0, 0x10), "rjmp 0x0022"); // to the next word
   CHECK_EQ(dis(0xD000 | 5, 0, 0), "rcall 0x000C");
-  // BRNE .-4 по слову 0x2B (байт 0x56): цель слово 0x28 -> 0x50
+  // BRNE .-4 at word 0x2B (byte 0x56): target word 0x28 -> 0x50
   CHECK_EQ(dis(0xF401 | ((-4 & 0x7F) << 3), 0, 0x2B), "brne 0x0050");
   CHECK_EQ(dis(0xF001, 0, 0), "breq 0x0002");
-  // Переход «назад» через ноль заворачивается в пределах flash.
+  // A "backward" jump through zero wraps around within flash.
   CHECK_EQ(dis(rjmp(-2), 0, 0), "rjmp 0x7FFE");
 }
 
 TEST(disasm_unknown_opcode_is_dot_word) {
-  auto d = avr::disassemble(0x95D8, 0, 0); // ELPM — нет на ATmega328P
+  auto d = avr::disassemble(0x95D8, 0, 0); // ELPM — not on the ATmega328P
   CHECK(!d.known);
   CHECK_EQ(d.words, 1u);
   CHECK_EQ(d.text, ".word 0x95D8");

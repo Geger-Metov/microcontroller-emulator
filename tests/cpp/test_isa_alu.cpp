@@ -1,6 +1,6 @@
-// Исчерпывающие проверки АЛУ: результат и ВЕСЬ регистр SREG сверяются с
-// независимым оракулом на широкой арифметике (int), а не с теми же битовыми
-// формулами, что в реализации.
+// Exhaustive ALU checks: the result and the WHOLE SREG are compared with
+// an independent oracle on wide arithmetic (int), not with the same bit
+// formulas as in the implementation.
 #include <string>
 
 #include "test_framework.h"
@@ -28,17 +28,17 @@ struct Fx {
     opcode = op;
   }
 
-  // Выполняет одну инструкцию с заданными r16, r17 и SREG. Возвращает r16,
+  // Executes one instruction with the given r16, r17 and SREG. Returns r16,
   // SREG.
   Result run(uint8_t a, uint8_t b, uint8_t sreg_in) {
     emu->write_data(16, a, 1);
     emu->write_data(17, b, 1);
     emu->write_data(SREG, sreg_in, 1);
-    emu->step_instruction(); // сама инструкция
+    emu->step_instruction(); // the instruction itself
     Result r;
     r.value = static_cast<uint8_t>(emu->read_data(16, 1));
     r.sreg = static_cast<uint8_t>(emu->read_data(SREG, 1));
-    emu->step_instruction(); // rjmp .-2 — вернуться на слово 0
+    emu->step_instruction(); // rjmp .-2 — back to word 0
     return r;
   }
 };
@@ -46,7 +46,7 @@ struct Fx {
 int bit(int v, int n) { return (v >> n) & 1; }
 int s8(int v) { return static_cast<int8_t>(v); }
 
-// Меняет в sreg только биты из mask на значения из flags.
+// Changes only the mask bits in sreg to the values from flags.
 uint8_t merge(uint8_t sreg_in, uint8_t mask, uint8_t flags) {
   return static_cast<uint8_t>((sreg_in & ~mask) | (flags & mask));
 }
@@ -61,8 +61,8 @@ constexpr uint8_t ALL_ARITH =
     (1 << C) | (1 << Z) | (1 << N) | (1 << V) | (1 << S) | (1 << H);
 constexpr uint8_t NZVS = (1 << Z) | (1 << N) | (1 << V) | (1 << S);
 
-// Оракул сложения/вычитания. sub=false: a + b + cin, sub=true: a - b - cin.
-// sticky_z: Z = (res==0) && старый Z.
+// Add/subtract oracle. sub=false: a + b + cin, sub=true: a - b - cin.
+// sticky_z: Z = (res==0) && the old Z.
 struct Expect {
   uint8_t value;
   uint8_t sreg;
@@ -108,12 +108,13 @@ void expect_eq(const char *what, int a, int b, uint8_t sreg_in,
     fail(what, a, b, sreg_in, got.value, exp.value, got.sreg, exp.sreg);
 }
 
-// Фоновый шаблон для «чужих» флагов: чтобы поймать лишние/потерянные записи.
+// A background pattern for the "other" flags: to catch extra/lost writes.
 uint8_t background(int a, int b) {
   return static_cast<uint8_t>(((a * 7 + b * 13) & 1) ? 0xFF : 0x00);
 }
 
-// Перебор a, b и входных C/Z. Для SREG берём фон, подменяя C и Z.
+// Iterates a, b and the input C/Z. For SREG we take the background,
+// substituting C and Z.
 template <typename OracleFn>
 void sweep_two_regs(const char *name, uint16_t opcode, bool use_cin,
                     bool use_z_in, OracleFn oracle) {
@@ -144,7 +145,7 @@ TEST(alu_add_matches_oracle_exhaustively) {
 }
 
 TEST(alu_adc_matches_oracle_exhaustively) {
-  // Z у ADC НЕ липкий — именно здесь раньше была ошибка.
+  // Z is NOT sticky for ADC — this is where the bug used to be.
   sweep_two_regs("ADC", rd_rr(0x1C00, 16, 17), true, true,
                  [](int a, int b, int cin, uint8_t in) {
                    return oracle_addsub(false, a, b, cin, in, false);
@@ -180,7 +181,7 @@ TEST(alu_cpc_matches_oracle_exhaustively) {
 }
 
 namespace {
-// Формы с константой: b — это K, кодируется в опкод.
+// Constant forms: b is K, encoded into the opcode.
 template <typename OracleFn>
 void sweep_imm(const char *name, uint16_t base, bool use_cin, OracleFn oracle) {
   Fx fx(rd_k(base, 16, 0));
@@ -280,7 +281,7 @@ TEST(alu_unary_ops_match_oracle_exhaustively) {
   });
   sweep_unary("NEG", 0x9401, [](int a, int, uint8_t in) {
     int res = (0 - a) & 0xFF;
-    // Через арифметику: 0 - a; H — заём из бита 3; V — переполнение знакового.
+    // Via arithmetic: 0 - a; H — borrow from bit 3; V — signed overflow.
     int h = (0 - (a & 15)) < 0;
     int v = (0 - s8(a)) > 127;
     Expect e;
@@ -291,7 +292,7 @@ TEST(alu_unary_ops_match_oracle_exhaustively) {
   sweep_unary("SWAP", 0x9402, [](int a, int, uint8_t in) {
     Expect e;
     e.value = static_cast<uint8_t>(((a & 15) << 4) | (a >> 4));
-    e.sreg = in; // флаги не меняются
+    e.sreg = in; // flags do not change
     return e;
   });
   sweep_unary("LSR", 0x9406, [](int a, int, uint8_t in) {
@@ -302,7 +303,7 @@ TEST(alu_unary_ops_match_oracle_exhaustively) {
     return e;
   });
   sweep_unary("ASR", 0x9405, [](int a, int, uint8_t in) {
-    int res = s8(a) >> 1, c = a & 1; // арифметический сдвиг через знаковый int
+    int res = s8(a) >> 1, c = a & 1; // arithmetic shift through a signed int
     int n = bit(res, 7);
     Expect e;
     e.value = static_cast<uint8_t>(res);
@@ -358,7 +359,7 @@ TEST(alu_mul_family_matches_oracle_exhaustively) {
   struct Op {
     const char *name;
     uint16_t opcode;
-    int (*product)(int, int); // знаковое/беззнаковое произведение
+    int (*product)(int, int); // signed/unsigned product
     bool frac;
   };
   const Op ops[] = {
@@ -384,9 +385,9 @@ TEST(alu_mul_family_matches_oracle_exhaustively) {
         emu->write_data(SREG, in, 1);
         uint64_t c0 = emu->get_cycle_count();
         emu->step_instruction();
-        CHECK_EQ(emu->get_cycle_count() - c0, 2u); // все MUL* — 2 такта
+        CHECK_EQ(emu->get_cycle_count() - c0, 2u); // all MUL* take 2 cycles
 
-        int p = op.product(a, b) & 0xFFFF; // произведение как 16-битное
+        int p = op.product(a, b) & 0xFFFF; // the product as 16 bits
         int c = bit(p, 15);
         int res = op.frac ? (p << 1) & 0xFFFF : p;
         uint8_t exp_sreg =

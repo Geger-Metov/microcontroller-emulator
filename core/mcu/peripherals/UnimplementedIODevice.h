@@ -5,13 +5,14 @@
 #include "interfaces/Interfaces.h"
 
 /**
- * Заглушка для ещё не реализованных регистров ввода-вывода.
+ * A stub for I/O registers that are not implemented yet.
  *
- * Чтение возвращает 0, запись игнорируется (RAZ/WI), а не бросает исключение:
- * реальные прошивки (например, Arduino init()) при старте обращаются к десяткам
- * регистров UART/ADC/SPI/TWI/..., и эмулятор не должен падать из-за этого.
- * Все обращённые адреса запоминаются и доступны через touched() для диагностики
- * («что прошивка ожидает от периферии, которой ещё нет»).
+ * A read returns 0 and a write is ignored (RAZ/WI) instead of throwing an
+ * exception: real firmware (for example Arduino init()) touches dozens of
+ * UART/ADC/SPI/TWI/... registers at startup, and the emulator must not crash
+ * because of that. All touched addresses are remembered and available through
+ * touched() for diagnostics
+ * ("what the firmware expects from a peripheral that does not exist yet").
  */
 class UnimplementedIODevice : public IMemoryMapped {
 public:
@@ -24,7 +25,7 @@ public:
   void write(uint32_t offset, uint8_t) override { touched_.insert(offset); }
   uint32_t size() const override { return size_; }
 
-  /// Смещения (от начала диапазона), к которым обращалась программа.
+  /// Offsets (from the start of the range) that the program accessed.
   const std::set<uint32_t> &touched() const { return touched_; }
 
 private:

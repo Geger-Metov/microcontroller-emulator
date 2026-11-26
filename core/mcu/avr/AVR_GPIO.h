@@ -17,7 +17,7 @@ public:
   void write(uint32_t offset, uint8_t value) override;
   uint32_t size() const override { return 3; } // num_regs
 
-  // ITickable (ничего не делает)
+  // ITickable (does nothing)
   void tick(uint64_t) override {}
 
   // IDevice

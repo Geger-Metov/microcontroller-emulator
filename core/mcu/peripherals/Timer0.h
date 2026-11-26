@@ -6,17 +6,18 @@
 /**
  * 8-bit Timer/Counter0 (ATmega328P).
  *
- * Реализовано: все режимы счёта (Normal, CTC, Fast PWM, Phase Correct PWM,
- * включая TOP = OCR0A), предделитель clk/1..clk/1024, флаги TOV0/OCF0A/OCF0B,
- * маска TIMSK0 и три вектора прерываний, двойная буферизация OCR0x в PWM.
+ * Implemented: all counting modes (Normal, CTC, Fast PWM, Phase Correct PWM,
+ * including TOP = OCR0A), prescaler clk/1..clk/1024, the TOV0/OCF0A/OCF0B
+ * flags, the TIMSK0 mask and three interrupt vectors, double buffering of OCR0x
+ * in PWM.
  *
- * Не реализовано: выходы OC0A/OC0B (биты COM0xx только сохраняются), строб
- * FOC0x, внешний источник тактов на пине T0 (CS02:0 = 110/111 — таймер
- * считается остановленным).
+ * Not implemented: the OC0A/OC0B outputs (COM0xx bits are only stored), the
+ * FOC0x strobe, an external clock source on pin T0 (CS02:0 = 110/111 — the
+ * timer is considered stopped).
  *
- * Таймер НЕ отображается в память целиком: каждый регистр лежит по своему
- * адресу (см. ATmega328P::build_memory_map), а время таймеру сообщает шина
- * через MemoryBus::add_tickable().
+ * The timer is NOT mapped into memory as a whole: each register sits at its
+ * own address (see ATmega328P::build_memory_map), and the bus delivers time to
+ * the timer through MemoryBus::add_tickable().
  */
 class Timer0 : public ITickable, public IResettable {
 public:
@@ -25,14 +26,14 @@ public:
   void tick(uint64_t cycles) override;
   void reset() override;
 
-  /// Подключить контроллер прерываний (CPU) и зарегистрировать сброс флагов
-  /// при входе в вектор.
+  /// Attach the interrupt controller (CPU) and register flag clearing
+  /// on vector entry.
   void attach_interrupt_sink(IInterruptSink *sink);
 
   MMIORegister TCCR0A;
   MMIORegister TCCR0B;
   MMIORegister TCNT0;
-  MMIORegister OCR0A; // для PWM-режимов хранит значение буфера
+  MMIORegister OCR0A; // in PWM modes holds the buffer value
   MMIORegister OCR0B;
   MMIORegister TIMSK0;
   MMIORegister TIFR0;
@@ -42,25 +43,25 @@ private:
   static constexpr uint8_t OCF0A = 1u << 1;
   static constexpr uint8_t OCF0B = 1u << 2;
 
-  // Внутренний предделитель
+  // Internal prescaler
   uint64_t prescaler_accum_ = 0;
   static constexpr uint16_t prescaler_divisors[8] = {
-      0,    // 000 - таймер остановлен
+      0,    // 000 - timer stopped
       1,    // 001 - clk/1
       8,    // 010 - clk/8
       64,   // 011 - clk/64
       256,  // 100 - clk/256
       1024, // 101 - clk/1024
-      0,    // 110 - внешний источник на T0 (пин не моделируется)
-      0,    // 111 - внешний источник на T0 (пин не моделируется)
+      0,    // 110 - external source on T0 (the pin is not modeled)
+      0,    // 111 - external source on T0 (the pin is not modeled)
   };
 
-  // Действующие значения OCR0x (в PWM-режимах обновляются из буфера в
-  // определённый момент счёта, а не сразу при записи).
+  // Effective OCR0x values (in PWM modes they are updated from the buffer at a
+  // specific point of the count, not immediately on write).
   uint8_t ocr_a_active_ = 0;
   uint8_t ocr_b_active_ = 0;
-  bool counting_up_ = true;   // для Phase Correct PWM
-  bool skip_compare_ = false; // запись в TCNT0 блокирует сравнение на 1 такт
+  bool counting_up_ = true;   // for Phase Correct PWM
+  bool skip_compare_ = false; // a write to TCNT0 blocks the compare for 1 cycle
 
   IInterruptSink *interrupt_sink_ = nullptr;
 

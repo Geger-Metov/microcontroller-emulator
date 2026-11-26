@@ -100,11 +100,12 @@ uint64_t EmulatorFacade::run_for_cycles(uint64_t cycle_budget) {
   if (!cpu_)
     throw std::runtime_error("CPU not set");
 
-  // Порядок важен: сначала сбрасываем старый запрос, потом объявляем запуск
-  // идущим — иначе pause(), пришедший между двумя шагами, потерялся бы.
+  // The order matters: first clear the old request, then declare the run
+  // in progress — otherwise a pause() arriving between the two steps would be
+  // lost.
   stop_requested_ = false;
 
-  // running_ сбрасывается и при исключении (например, Illegal instruction).
+  // running_ is cleared on an exception too (for example, Illegal instruction).
   struct RunningGuard {
     std::atomic<bool> &flag;
     explicit RunningGuard(std::atomic<bool> &f) : flag(f) { flag = true; }
