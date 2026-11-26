@@ -3,7 +3,7 @@
 
 # Explicit: for ruff.toml (unlike pyproject.toml) the Python version is not inferred from
 # requires-python, while the code uses 3.12+ syntax (generic functions).
-target-version = "py315"
+target-version = "py312"
 
 [lint.isort]
 # `gui` lives in gui/src. Without an explicit setting the import sorting depends on
